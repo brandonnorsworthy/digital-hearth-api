@@ -72,4 +72,15 @@ public class TaskRepository(AppDbContext db) : ITaskRepository
             .Include(t => t.Household).ThenInclude(h => h.Members)
             .ToListAsync(ct);
     }
+
+    public async Task<List<RecurringTask>> GetDueTasksAsync(DateTime now, CancellationToken ct)
+    {
+        return await db.RecurringTasks
+            .Where(t => (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays) <= now)
+            .Include(t => t.NotifPreferences)
+            .Include(t => t.Household)
+                .ThenInclude(h => h.Members)
+                    .ThenInclude(m => m.PushSubscriptions)
+            .ToListAsync(ct);
+    }
 }

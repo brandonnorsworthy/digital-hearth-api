@@ -68,4 +68,18 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
         db.NotifPreferences.Remove(pref);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<bool> HasLogAsync(int subscriptionId, int taskId, DateTime dueAt, CancellationToken ct)
+    {
+        return await db.NotificationLogs
+            .AnyAsync(l => l.PushSubscriptionId == subscriptionId
+                        && l.RecurringTaskId == taskId
+                        && l.DueAt == dueAt, ct);
+    }
+
+    public async Task AddLogAsync(NotificationLog log, CancellationToken ct)
+    {
+        db.NotificationLogs.Add(log);
+        await db.SaveChangesAsync(ct);
+    }
 }

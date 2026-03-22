@@ -1,0 +1,302 @@
+using DigitalHearth.Api.Controllers;
+using DigitalHearth.Api.DTOs.Meal;
+using DigitalHearth.Api.Services;
+using DigitalHearth.Api.Tests.Fixtures;
+using FluentAssertions;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
+
+namespace DigitalHearth.Api.Tests.Controllers;
+
+public class MealControllerTests
+{
+    private readonly Mock<ICurrentUserService> _currentUser = new();
+    private readonly Mock<IMealService> _mealService = new();
+    private readonly Mock<IImageGenerationService> _imageGen = new();
+    private readonly MealController _sut;
+
+    private static readonly WeeklyMealResponse FakeWeekly = new(1, "2025-01-06", "Pasta", null, false, null);
+    private static readonly LibraryMealResponse FakeLibrary = new(1, "Pasta", "alice", DateTime.UtcNow, [], null);
+
+    public MealControllerTests()
+    {
+        _sut = new MealController(_currentUser.Object, _mealService.Object, _imageGen.Object);
+        _sut.ControllerContext = new ControllerContext();
+    }
+
+    // --- GenerateImage ---
+
+    [Fact]
+    public async Task GenerateImage_Authenticated_ImageGenSucceeds_Returns200()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", default)).ReturnsAsync("data:image/png;base64,abc");
+
+        var result = await _sut.GenerateImage(new GenerateImageRequest("Pasta"), default);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateImage_Authenticated_ImageGenFails_Returns400()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _imageGen.Setup(s => s.GenerateImageAsync(It.IsAny<string>(), default)).ReturnsAsync((string?)null);
+
+        var result = await _sut.GenerateImage(new GenerateImageRequest("Pasta"), default);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateImage_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.GenerateImage(new GenerateImageRequest("Pasta"), default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    // --- GetWeekly ---
+
+    [Fact]
+    public async Task GetWeekly_Authenticated_ServiceReturnsOk_Returns200()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.GetWeeklyAsync(10, null, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Ok([FakeWeekly]));
+
+        var result = await _sut.GetWeekly(10, null, default);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetWeekly_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.GetWeekly(10, null, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetWeekly_ServiceReturnsForbidden_Returns403()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.GetWeeklyAsync(10, null, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Forbidden());
+
+        var result = await _sut.GetWeekly(10, null, default);
+
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    // --- AddWeekly ---
+
+    [Fact]
+    public async Task AddWeekly_ServiceReturnsOk_Returns201()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.AddWeeklyAsync(10, It.IsAny<AddWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<WeeklyMealResponse>.Ok(FakeWeekly));
+
+        var result = await _sut.AddWeekly(10, new AddWeeklyMealRequest("2025-01-06", null, "Pasta"), default);
+
+        var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        created.Value.Should().Be(FakeWeekly);
+    }
+
+    [Fact]
+    public async Task AddWeekly_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.AddWeekly(10, new AddWeeklyMealRequest("2025-01-06", null, "Pasta"), default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task AddWeekly_ServiceReturnsBadRequest_Returns400()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.AddWeeklyAsync(10, It.IsAny<AddWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<WeeklyMealResponse>.BadRequest("Either mealLibraryId or name is required"));
+
+        var result = await _sut.AddWeekly(10, new AddWeeklyMealRequest("2025-01-06", null, null), default);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    // --- PatchWeekly ---
+
+    [Fact]
+    public async Task PatchWeekly_Authenticated_ServiceReturnsOk_Returns200()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.LinkToLibraryAsync(1, It.IsAny<PatchWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<WeeklyMealResponse>.Ok(FakeWeekly));
+
+        var result = await _sut.PatchWeekly(1, new PatchWeeklyMealRequest(5), default);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task PatchWeekly_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.PatchWeekly(1, new PatchWeeklyMealRequest(5), default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task PatchWeekly_ServiceReturnsNotFound_Returns404()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.LinkToLibraryAsync(1, It.IsAny<PatchWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<WeeklyMealResponse>.NotFound("Weekly meal not found"));
+
+        var result = await _sut.PatchWeekly(1, new PatchWeeklyMealRequest(5), default);
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    // --- DeleteWeekly ---
+
+    [Fact]
+    public async Task DeleteWeekly_Authenticated_ServiceReturnsOk_Returns204()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.DeleteWeeklyAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.Ok());
+
+        var result = await _sut.DeleteWeekly(1, default);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task DeleteWeekly_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.DeleteWeekly(1, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteWeekly_ServiceReturnsForbidden_Returns403()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.DeleteWeeklyAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.Forbidden());
+
+        var result = await _sut.DeleteWeekly(1, default);
+
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    // --- GetLibrary ---
+
+    [Fact]
+    public async Task GetLibrary_Authenticated_ServiceReturnsOk_Returns200()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.GetLibraryAsync(10, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<IReadOnlyList<LibraryMealResponse>>.Ok([FakeLibrary]));
+
+        var result = await _sut.GetLibrary(10, default);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetLibrary_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.GetLibrary(10, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    // --- AddToLibrary ---
+
+    [Fact]
+    public async Task AddToLibrary_ServiceReturnsOk_Returns201()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.AddToLibraryAsync(10, It.IsAny<AddLibraryMealRequest>(), It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<LibraryMealResponse>.Ok(FakeLibrary));
+
+        var result = await _sut.AddToLibrary(10, new AddLibraryMealRequest("Pasta", null), default);
+
+        var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        created.Value.Should().Be(FakeLibrary);
+    }
+
+    [Fact]
+    public async Task AddToLibrary_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.AddToLibrary(10, new AddLibraryMealRequest("Pasta", null), default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task AddToLibrary_ServiceReturnsForbidden_Returns403()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.AddToLibraryAsync(10, It.IsAny<AddLibraryMealRequest>(), It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult<LibraryMealResponse>.Forbidden());
+
+        var result = await _sut.AddToLibrary(10, new AddLibraryMealRequest("Pasta", null), default);
+
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    // --- DeleteFromLibrary ---
+
+    [Fact]
+    public async Task DeleteFromLibrary_Authenticated_ServiceReturnsOk_Returns204()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.DeleteFromLibraryAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.Ok());
+
+        var result = await _sut.DeleteFromLibrary(1, default);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task DeleteFromLibrary_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.DeleteFromLibrary(1, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteFromLibrary_ServiceReturnsNotFound_Returns404()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.DeleteFromLibraryAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.NotFound("Library meal not found"));
+
+        var result = await _sut.DeleteFromLibrary(1, default);
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+}

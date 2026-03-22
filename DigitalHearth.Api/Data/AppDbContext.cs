@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<MealLibrary> MealLibrary => Set<MealLibrary>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<NotifPreference> NotifPreferences => Set<NotifPreference>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -45,6 +46,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // PushSubscription: unique per (userId, endpoint)
         b.Entity<PushSubscription>()
             .HasIndex(p => new { p.UserId, p.Endpoint }).IsUnique();
+
+        // NotificationLog: unique per subscription + task + due instance; cascade on both FKs
+        b.Entity<NotificationLog>()
+            .HasIndex(n => new { n.PushSubscriptionId, n.RecurringTaskId, n.DueAt }).IsUnique();
+
+        b.Entity<NotificationLog>()
+            .HasOne(n => n.PushSubscription)
+            .WithMany()
+            .HasForeignKey(n => n.PushSubscriptionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<NotificationLog>()
+            .HasOne(n => n.RecurringTask)
+            .WithMany()
+            .HasForeignKey(n => n.RecurringTaskId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // WeeklyMeal
         b.Entity<WeeklyMeal>()

@@ -14,4 +14,5 @@ public interface ITaskRepository
     Task<TaskCompletion> AddCompletionAsync(TaskCompletion completion, CancellationToken ct);
     Task<List<CompletionResponse>> GetHistoryAsync(int taskId, CancellationToken ct);
     Task<List<RecurringTask>> GetDueInWindowAsync(DateTime windowStart, DateTime now, CancellationToken ct);
+    Task<List<RecurringTask>> GetDueTasksAsync(DateTime now, CancellationToken ct);
 }

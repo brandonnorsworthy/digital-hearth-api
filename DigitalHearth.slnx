@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="DigitalHearth.Api.Tests/DigitalHearth.Api.Tests.csproj" />
   <Project Path="DigitalHearth.Api/DigitalHearth.Api.csproj" />
 </Solution>

@@ -21,29 +21,32 @@ public class PushNotificationService(INotificationRepository notifications, ICon
 
     public async Task SendToUserAsync(int userId, string title, string body, CancellationToken ct = default)
     {
+        var subs = await notifications.GetSubscriptionsByUserAsync(userId, ct);
+        foreach (var sub in subs)
+            await SendToSubscriptionAsync(sub, title, body, ct);
+    }
+
+    public async Task<bool> SendToSubscriptionAsync(Models.PushSubscription sub, string title, string body, CancellationToken ct = default)
+    {
         var vapid = GetVapid();
         if (vapid is null)
         {
             logger.LogWarning("VAPID keys not configured — skipping push notification");
-            return;
+            return false;
         }
 
-        var subs = await notifications.GetSubscriptionsByUserAsync(userId, ct);
-
-        var client = new WebPushClient();
-        var payload = JsonSerializer.Serialize(new { title, body });
-
-        foreach (var sub in subs)
+        try
         {
-            try
-            {
-                var pushSub = new PushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
-                await client.SendNotificationAsync(pushSub, payload, vapid);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to send push notification to subscription {Id} — may be stale", sub.Id);
-            }
+            var client = new WebPushClient();
+            var payload = JsonSerializer.Serialize(new { title, body });
+            var pushSub = new PushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
+            await client.SendNotificationAsync(pushSub, payload, vapid);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send push notification to subscription {Id} — may be stale", sub.Id);
+            return false;
         }
     }
 }
