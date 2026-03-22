@@ -7,13 +7,10 @@ namespace DigitalHearth.Api.Services;
 
 public class TaskService(AppDbContext db) : ITaskService
 {
-    private static readonly string[] ValidTiers = ["short", "medium", "long"];
-
     private static TaskResponse ToResponse(RecurringTask t) => new(
         t.Id,
         t.HouseholdId,
         t.Name,
-        t.Tier,
         t.IntervalDays,
         t.LastCompletedAt,
         t.LastCompletedByUser?.Username,
@@ -44,9 +41,6 @@ public class TaskService(AppDbContext db) : ITaskService
         if (user.HouseholdId != householdId)
             return ServiceResult<TaskResponse>.Forbidden();
 
-        if (!ValidTiers.Contains(req.Tier))
-            return ServiceResult<TaskResponse>.BadRequest("Tier must be 'short', 'medium', or 'long'");
-
         if (req.IntervalDays <= 0)
             return ServiceResult<TaskResponse>.BadRequest("IntervalDays must be greater than 0");
 
@@ -54,7 +48,6 @@ public class TaskService(AppDbContext db) : ITaskService
         {
             HouseholdId = householdId,
             Name = req.Name,
-            Tier = req.Tier,
             IntervalDays = req.IntervalDays,
             CreatedAt = DateTime.UtcNow
         };
@@ -78,12 +71,6 @@ public class TaskService(AppDbContext db) : ITaskService
             return ServiceResult<TaskResponse>.Forbidden();
 
         if (req.Name is not null) task.Name = req.Name;
-        if (req.Tier is not null)
-        {
-            if (!ValidTiers.Contains(req.Tier))
-                return ServiceResult<TaskResponse>.BadRequest("Tier must be 'short', 'medium', or 'long'");
-            task.Tier = req.Tier;
-        }
         if (req.IntervalDays is not null)
         {
             if (req.IntervalDays <= 0)

@@ -8,10 +8,10 @@ namespace DigitalHearth.Api.Services;
 public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : IMealService
 {
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
-        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageUrl);
+        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageData);
 
     private static LibraryMealResponse ToLibraryResponse(MealLibrary m) =>
-        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.ImageUrl);
+        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.ImageData);
 
     private static DateOnly CurrentWeekStart(int weekResetDay)
     {
@@ -150,7 +150,7 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
                 var saved = await scopedDb.MealLibrary.FindAsync(mealId);
                 if (saved is not null)
                 {
-                    saved.ImageUrl = imageUrl;
+                    saved.ImageData = imageUrl;
                     await scopedDb.SaveChangesAsync();
                 }
             }

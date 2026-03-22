@@ -5,7 +5,6 @@ public class RecurringTask
     public int Id { get; set; }
     public int HouseholdId { get; set; }
     public string Name { get; set; } = null!;
-    public string Tier { get; set; } = null!; // "short" | "medium" | "long"
     public int IntervalDays { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastCompletedAt { get; set; }

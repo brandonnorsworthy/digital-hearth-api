@@ -66,6 +66,8 @@ public class NotificationController(
     [HttpPost("api/notifications/test/{userId:int}")]
     public async Task<IActionResult> Test(int userId, CancellationToken ct)
     {
+        var (_, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
         await push.SendToUserAsync(userId, "Test Notification", "Push is working!", ct);
         return Ok(new { sent = true });
     }

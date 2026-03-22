@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Task;
 
-public record CreateTaskRequest(string Name, string Tier, int IntervalDays);
+public record CreateTaskRequest(string Name, int IntervalDays);

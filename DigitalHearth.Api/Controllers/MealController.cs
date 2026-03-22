@@ -13,11 +13,11 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         var (_, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
 
-        var imageUrl = await imageGeneration.GenerateImageAsync(req.MealName, ct);
-        if (imageUrl is null)
+        var imageData = await imageGeneration.GenerateImageAsync(req.MealName, ct);
+        if (imageData is null)
             return BadRequest(new { error = "Image generation failed or is not configured" });
 
-        return Ok(new { imageUrl });
+        return Ok(new { imageData });
     }
 
     [HttpGet("api/households/{householdId:int}/meals/weekly")]

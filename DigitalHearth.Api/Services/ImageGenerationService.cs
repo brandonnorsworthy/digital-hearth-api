@@ -3,7 +3,7 @@ using OpenAI.Images;
 
 namespace DigitalHearth.Api.Services;
 
-public class ImageGenerationService(IConfiguration config, ILogger<ImageGenerationService> logger) : IImageGenerationService
+public class ImageGenerationService(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<ImageGenerationService> logger) : IImageGenerationService
 {
     private const string PromptSystemMessage =
         "You are a professional food photographer and stylist. " +
@@ -41,7 +41,13 @@ public class ImageGenerationService(IConfiguration config, ILogger<ImageGenerati
                 Size = GeneratedImageSize.W1024xH1024
             }, ct);
 
-            return imageResult.Value.ImageUri?.ToString();
+            var openAiUrl = imageResult.Value.ImageUri;
+            if (openAiUrl is null) return null;
+
+            // Stage 3: download and store as base64 — OpenAI URLs expire after ~1 hour
+            var http = httpClientFactory.CreateClient();
+            var bytes = await http.GetByteArrayAsync(openAiUrl, ct);
+            return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
         }
         catch (Exception ex)
         {

@@ -28,6 +28,7 @@ builder.Services.AddCors(opt =>
          .AllowCredentials()));
 
 // Application services
+builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
