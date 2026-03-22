@@ -1,0 +1,52 @@
+using System.Text.Json;
+using DigitalHearth.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using WebPush;
+
+namespace DigitalHearth.Api.Services;
+
+public class PushNotificationService(AppDbContext db, IConfiguration config, ILogger<PushNotificationService> logger)
+    : IPushNotificationService
+{
+    private VapidDetails? GetVapid()
+    {
+        var subject = config["Vapid:Subject"];
+        var publicKey = config["Vapid:PublicKey"];
+        var privateKey = config["Vapid:PrivateKey"];
+
+        if (string.IsNullOrEmpty(subject) || string.IsNullOrEmpty(publicKey) || string.IsNullOrEmpty(privateKey))
+            return null;
+
+        return new VapidDetails(subject, publicKey, privateKey);
+    }
+
+    public async Task SendToUserAsync(int userId, string title, string body, CancellationToken ct = default)
+    {
+        var vapid = GetVapid();
+        if (vapid is null)
+        {
+            logger.LogWarning("VAPID keys not configured — skipping push notification");
+            return;
+        }
+
+        var subs = await db.PushSubscriptions
+            .Where(s => s.UserId == userId)
+            .ToListAsync(ct);
+
+        var client = new WebPushClient();
+        var payload = JsonSerializer.Serialize(new { title, body });
+
+        foreach (var sub in subs)
+        {
+            try
+            {
+                var pushSub = new PushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
+                await client.SendNotificationAsync(pushSub, payload, vapid);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to send push notification to subscription {Id} — may be stale", sub.Id);
+            }
+        }
+    }
+}

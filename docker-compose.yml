@@ -1,0 +1,17 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: DigitalHearth.Api/Dockerfile
+    container_name: digitalhearth-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Default=${CONNECTION_STRINGS__DEFAULT}
+      - Vapid__PublicKey=${VAPID_PUBLIC_KEY}
+      - Vapid__PrivateKey=${VAPID_PRIVATE_KEY}
+      - Vapid__Subject=${VAPID_SUBJECT}
+    ports:
+      - "8080:8080"
+    mem_limit: 256m
+    stop_grace_period: 30s
