@@ -1,40 +1,34 @@
-using DigitalHearth.Api.Data;
 using DigitalHearth.Api.DTOs.Notification;
 using DigitalHearth.Api.Models;
-using Microsoft.EntityFrameworkCore;
+using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
-public class NotificationService(AppDbContext db) : INotificationService
+public class NotificationService(INotificationRepository notifications) : INotificationService
 {
     public async Task<ServiceResult> SubscribeAsync(PushSubscriptionRequest req, User user, CancellationToken ct = default)
     {
-        var existing = await db.PushSubscriptions
-            .FirstOrDefaultAsync(s => s.UserId == user.Id && s.Endpoint == req.Endpoint, ct);
+        var existing = await notifications.GetSubscriptionAsync(user.Id, req.Endpoint, ct);
 
         if (existing is not null)
-            db.PushSubscriptions.Remove(existing);
+            await notifications.DeleteSubscriptionAsync(existing, ct);
 
-        db.PushSubscriptions.Add(new PushSubscription
+        await notifications.AddSubscriptionAsync(new PushSubscription
         {
             UserId = user.Id,
             Endpoint = req.Endpoint,
             P256dh = req.P256dh,
             Auth = req.Auth
-        });
+        }, ct);
 
-        await db.SaveChangesAsync(ct);
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult> UnsubscribeAsync(User user, CancellationToken ct = default)
     {
-        var subs = await db.PushSubscriptions
-            .Where(s => s.UserId == user.Id)
-            .ToListAsync(ct);
+        var subs = await notifications.GetSubscriptionsByUserAsync(user.Id, ct);
 
-        db.PushSubscriptions.RemoveRange(subs);
-        await db.SaveChangesAsync(ct);
+        await notifications.DeleteSubscriptionsAsync(subs, ct);
         return ServiceResult.Ok();
     }
 
@@ -44,27 +38,22 @@ public class NotificationService(AppDbContext db) : INotificationService
         if (user.HouseholdId != householdId)
             return ServiceResult<PreferencesResponse>.Forbidden();
 
-        var optedOutIds = await db.NotifPreferences
-            .Where(p => p.UserId == user.Id)
-            .Select(p => p.TaskId)
-            .ToListAsync(ct);
+        var optedOutIds = await notifications.GetOptedOutTaskIdsAsync(user.Id, ct);
 
         return ServiceResult<PreferencesResponse>.Ok(new PreferencesResponse(optedOutIds));
     }
 
     public async Task<ServiceResult> OptOutAsync(OptOutRequest req, User user, CancellationToken ct = default)
     {
-        var alreadyOptedOut = await db.NotifPreferences
-            .AnyAsync(p => p.UserId == user.Id && p.TaskId == req.TaskId, ct);
+        var alreadyOptedOut = await notifications.IsOptedOutAsync(user.Id, req.TaskId, ct);
 
         if (!alreadyOptedOut)
         {
-            db.NotifPreferences.Add(new NotifPreference
+            await notifications.AddPreferenceAsync(new NotifPreference
             {
                 UserId = user.Id,
                 TaskId = req.TaskId
-            });
-            await db.SaveChangesAsync(ct);
+            }, ct);
         }
 
         return ServiceResult.Ok();
@@ -72,13 +61,11 @@ public class NotificationService(AppDbContext db) : INotificationService
 
     public async Task<ServiceResult> RemoveOptOutAsync(int taskId, User user, CancellationToken ct = default)
     {
-        var pref = await db.NotifPreferences
-            .FirstOrDefaultAsync(p => p.UserId == user.Id && p.TaskId == taskId, ct);
+        var pref = await notifications.GetPreferenceAsync(user.Id, taskId, ct);
 
         if (pref is not null)
         {
-            db.NotifPreferences.Remove(pref);
-            await db.SaveChangesAsync(ct);
+            await notifications.DeletePreferenceAsync(pref, ct);
         }
 
         return ServiceResult.Ok();

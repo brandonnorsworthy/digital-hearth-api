@@ -1,6 +1,5 @@
-using DigitalHearth.Api.Data;
+using DigitalHearth.Api.Repositories;
 using DigitalHearth.Api.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace DigitalHearth.Api.BackgroundServices;
 
@@ -14,20 +13,13 @@ public class TaskDueCheckerService(IServiceScopeFactory scopeFactory, ILogger<Ta
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var taskRepo = scope.ServiceProvider.GetRequiredService<ITaskRepository>();
                 var push = scope.ServiceProvider.GetRequiredService<IPushNotificationService>();
 
                 var now = DateTime.UtcNow;
                 var windowStart = now.AddHours(-1);
 
-                // Filter in SQL: only fetch tasks whose due date falls in the last hour window
-                var tasks = await db.RecurringTasks
-                    .Where(t =>
-                        (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays) >= windowStart &&
-                        (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays) < now)
-                    .Include(t => t.NotifPreferences)
-                    .Include(t => t.Household).ThenInclude(h => h.Members)
-                    .ToListAsync(stoppingToken);
+                var tasks = await taskRepo.GetDueInWindowAsync(windowStart, now, stoppingToken);
 
                 foreach (var task in tasks)
                 {

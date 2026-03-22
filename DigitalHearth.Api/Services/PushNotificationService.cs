@@ -1,11 +1,10 @@
 using System.Text.Json;
-using DigitalHearth.Api.Data;
-using Microsoft.EntityFrameworkCore;
+using DigitalHearth.Api.Repositories;
 using WebPush;
 
 namespace DigitalHearth.Api.Services;
 
-public class PushNotificationService(AppDbContext db, IConfiguration config, ILogger<PushNotificationService> logger)
+public class PushNotificationService(INotificationRepository notifications, IConfiguration config, ILogger<PushNotificationService> logger)
     : IPushNotificationService
 {
     private VapidDetails? GetVapid()
@@ -29,9 +28,7 @@ public class PushNotificationService(AppDbContext db, IConfiguration config, ILo
             return;
         }
 
-        var subs = await db.PushSubscriptions
-            .Where(s => s.UserId == userId)
-            .ToListAsync(ct);
+        var subs = await notifications.GetSubscriptionsByUserAsync(userId, ct);
 
         var client = new WebPushClient();
         var payload = JsonSerializer.Serialize(new { title, body });

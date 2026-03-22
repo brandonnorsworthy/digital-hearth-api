@@ -1,10 +1,10 @@
-using DigitalHearth.Api.Data;
 using DigitalHearth.Api.Models;
+using DigitalHearth.Api.Repositories;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace DigitalHearth.Api.Services;
 
-public class CurrentUserService(IHttpContextAccessor httpContextAccessor, AppDbContext db, IDataProtectionProvider dpProvider)
+public class CurrentUserService(IHttpContextAccessor httpContextAccessor, IUserRepository users, IDataProtectionProvider dpProvider)
     : ICurrentUserService
 {
     private const string CookieName = "dh_auth";
@@ -31,7 +31,7 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor, AppDbC
     {
         var id = GetUserId();
         if (id is null) return null;
-        return await db.Users.FindAsync([id.Value], ct);
+        return await users.GetByIdAsync(id.Value, ct);
     }
 
     public void SetUserId(int userId)

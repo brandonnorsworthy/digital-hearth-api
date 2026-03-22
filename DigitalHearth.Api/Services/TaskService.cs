@@ -1,11 +1,10 @@
-using DigitalHearth.Api.Data;
 using DigitalHearth.Api.DTOs.Task;
 using DigitalHearth.Api.Models;
-using Microsoft.EntityFrameworkCore;
+using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
-public class TaskService(AppDbContext db) : ITaskService
+public class TaskService(ITaskRepository tasks) : ITaskService
 {
     private static TaskResponse ToResponse(RecurringTask t) => new(
         t.Id,
@@ -22,12 +21,9 @@ public class TaskService(AppDbContext db) : ITaskService
         if (user.HouseholdId != householdId)
             return ServiceResult<IReadOnlyList<TaskResponse>>.Forbidden();
 
-        var tasks = await db.RecurringTasks
-            .Where(t => t.HouseholdId == householdId)
-            .Include(t => t.LastCompletedByUser)
-            .ToListAsync(ct);
+        var list = await tasks.GetByHouseholdAsync(householdId, ct);
 
-        var responses = tasks
+        var responses = list
             .Select(ToResponse)
             .OrderBy(t => t.NextDueAt)
             .ToList();
@@ -52,8 +48,7 @@ public class TaskService(AppDbContext db) : ITaskService
             CreatedAt = DateTime.UtcNow
         };
 
-        db.RecurringTasks.Add(task);
-        await db.SaveChangesAsync(ct);
+        await tasks.CreateAsync(task, ct);
 
         return ServiceResult<TaskResponse>.Ok(ToResponse(task));
     }
@@ -61,9 +56,7 @@ public class TaskService(AppDbContext db) : ITaskService
     public async Task<ServiceResult<TaskResponse>> UpdateAsync(
         int id, UpdateTaskRequest req, User user, CancellationToken ct = default)
     {
-        var task = await db.RecurringTasks
-            .Include(t => t.LastCompletedByUser)
-            .FirstOrDefaultAsync(t => t.Id == id, ct);
+        var task = await tasks.GetByIdWithUserAsync(id, ct);
 
         if (task is null)
             return ServiceResult<TaskResponse>.NotFound("Task not found");
@@ -78,28 +71,25 @@ public class TaskService(AppDbContext db) : ITaskService
             task.IntervalDays = req.IntervalDays.Value;
         }
 
-        await db.SaveChangesAsync(ct);
+        await tasks.SaveAsync(ct);
         return ServiceResult<TaskResponse>.Ok(ToResponse(task));
     }
 
     public async Task<ServiceResult> DeleteAsync(int id, User user, CancellationToken ct = default)
     {
-        var task = await db.RecurringTasks.FindAsync([id], ct);
+        var task = await tasks.GetByIdAsync(id, ct);
         if (task is null)
             return ServiceResult.NotFound("Task not found");
         if (task.HouseholdId != user.HouseholdId)
             return ServiceResult.Forbidden();
 
-        db.RecurringTasks.Remove(task);
-        await db.SaveChangesAsync(ct);
+        await tasks.DeleteAsync(task, ct);
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult<TaskResponse>> CompleteAsync(int id, User user, CancellationToken ct = default)
     {
-        var task = await db.RecurringTasks
-            .Include(t => t.LastCompletedByUser)
-            .FirstOrDefaultAsync(t => t.Id == id, ct);
+        var task = await tasks.GetByIdWithUserAsync(id, ct);
 
         if (task is null)
             return ServiceResult<TaskResponse>.NotFound("Task not found");
@@ -111,32 +101,26 @@ public class TaskService(AppDbContext db) : ITaskService
         task.LastCompletedByUserId = user.Id;
         task.LastCompletedByUser = user;
 
-        db.TaskCompletions.Add(new TaskCompletion
+        await tasks.AddCompletionAsync(new TaskCompletion
         {
             TaskId = id,
             UserId = user.Id,
             CompletedAt = now
-        });
+        }, ct);
 
-        await db.SaveChangesAsync(ct);
         return ServiceResult<TaskResponse>.Ok(ToResponse(task));
     }
 
     public async Task<ServiceResult<IReadOnlyList<CompletionResponse>>> GetHistoryAsync(
         int id, User user, CancellationToken ct = default)
     {
-        var task = await db.RecurringTasks.FindAsync([id], ct);
+        var task = await tasks.GetByIdAsync(id, ct);
         if (task is null)
             return ServiceResult<IReadOnlyList<CompletionResponse>>.NotFound("Task not found");
         if (task.HouseholdId != user.HouseholdId)
             return ServiceResult<IReadOnlyList<CompletionResponse>>.Forbidden();
 
-        var completions = await db.TaskCompletions
-            .Where(c => c.TaskId == id)
-            .Include(c => c.User)
-            .OrderByDescending(c => c.CompletedAt)
-            .Select(c => new CompletionResponse(c.Id, c.TaskId, c.CompletedAt, c.UserId, c.User.Username))
-            .ToListAsync(ct);
+        var completions = await tasks.GetHistoryAsync(id, ct);
 
         return ServiceResult<IReadOnlyList<CompletionResponse>>.Ok(completions);
     }

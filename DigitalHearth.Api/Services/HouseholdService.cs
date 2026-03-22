@@ -1,12 +1,11 @@
-using DigitalHearth.Api.Data;
 using DigitalHearth.Api.DTOs.Auth;
 using DigitalHearth.Api.DTOs.Household;
 using DigitalHearth.Api.Models;
-using Microsoft.EntityFrameworkCore;
+using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
-public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, IJoinCodeService joinCodeService) : IHouseholdService
+public class HouseholdService(IHouseholdRepository households, IUserRepository users, ICurrentUserService currentUser, IJoinCodeService joinCodeService) : IHouseholdService
 {
     private static readonly string[] ValidDays =
         ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -38,10 +37,10 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
             return ServiceResult<HouseholdWithUserResponse>.BadRequest("WeekResetDay must be a valid day name (e.g. Monday)");
 
         var normalizedUsername = req.Username.ToLowerInvariant();
-        if (await db.Users.AnyAsync(u => u.Username == normalizedUsername, ct))
+        if (await users.UsernameExistsAsync(normalizedUsername, ct))
             return ServiceResult<HouseholdWithUserResponse>.Conflict("Username already taken");
 
-        var joinCode = await joinCodeService.GenerateUniqueCodeAsync(db, ct);
+        var joinCode = await joinCodeService.GenerateUniqueCodeAsync(households, ct);
 
         var household = new Household
         {
@@ -49,8 +48,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
             JoinCode = joinCode,
             WeekResetDay = weekResetDay
         };
-        db.Households.Add(household);
-        await db.SaveChangesAsync(ct);
+        await households.CreateAsync(household, ct);
 
         var user = new User
         {
@@ -59,8 +57,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
             Role = "admin",
             HouseholdId = household.Id
         };
-        db.Users.Add(user);
-        await db.SaveChangesAsync(ct);
+        await users.CreateAsync(user, ct);
 
         currentUser.SetUserId(user.Id);
 
@@ -71,14 +68,13 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
 
     public async Task<ServiceResult<HouseholdWithUserResponse>> JoinAsync(JoinHouseholdRequest req, CancellationToken ct = default)
     {
-        var household = await db.Households
-            .FirstOrDefaultAsync(h => h.JoinCode.ToUpper() == req.JoinCode.ToUpper(), ct);
+        var household = await households.GetByJoinCodeAsync(req.JoinCode, ct);
 
         if (household is null)
             return ServiceResult<HouseholdWithUserResponse>.NotFound("Join code not found");
 
         var normalizedUsername = req.Username.ToLowerInvariant();
-        if (await db.Users.AnyAsync(u => u.Username == normalizedUsername, ct))
+        if (await users.UsernameExistsAsync(normalizedUsername, ct))
             return ServiceResult<HouseholdWithUserResponse>.Conflict("Username already taken");
 
         var user = new User
@@ -88,8 +84,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
             Role = "member",
             HouseholdId = household.Id
         };
-        db.Users.Add(user);
-        await db.SaveChangesAsync(ct);
+        await users.CreateAsync(user, ct);
 
         currentUser.SetUserId(user.Id);
 
@@ -103,7 +98,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
         if (user.HouseholdId != id)
             return ServiceResult<HouseholdResponse>.Forbidden();
 
-        var household = await db.Households.FindAsync([id], ct);
+        var household = await households.GetByIdAsync(id, ct);
         if (household is null)
             return ServiceResult<HouseholdResponse>.NotFound("Household not found");
 
@@ -115,10 +110,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
         if (user.HouseholdId != id)
             return ServiceResult<IReadOnlyList<MemberResponse>>.Forbidden();
 
-        var members = await db.Users
-            .Where(u => u.HouseholdId == id)
-            .Select(u => new MemberResponse(u.Id, u.Username, u.Role))
-            .ToListAsync(ct);
+        var members = await users.GetMembersByHouseholdAsync(id, ct);
 
         return ServiceResult<IReadOnlyList<MemberResponse>>.Ok(members);
     }
@@ -131,7 +123,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
         if (user.Role != "admin")
             return ServiceResult<HouseholdResponse>.Forbidden();
 
-        var household = await db.Households.FindAsync([id], ct);
+        var household = await households.GetByIdAsync(id, ct);
         if (household is null)
             return ServiceResult<HouseholdResponse>.NotFound("Household not found");
 
@@ -144,7 +136,7 @@ public class HouseholdService(AppDbContext db, ICurrentUserService currentUser, 
             household.WeekResetDay = day;
         }
 
-        await db.SaveChangesAsync(ct);
+        await households.SaveAsync(ct);
         return ServiceResult<HouseholdResponse>.Ok(ToResponse(household));
     }
 }

@@ -1,5 +1,6 @@
 using DigitalHearth.Api.BackgroundServices;
 using DigitalHearth.Api.Data;
+using DigitalHearth.Api.Repositories;
 using DigitalHearth.Api.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,12 @@ builder.Services.AddScoped<IMealService, MealService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<TaskDueCheckerService>();
+
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<IMealRepository, MealRepository>();
+builder.Services.AddScoped<IHouseholdRepository, HouseholdRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(opt =>

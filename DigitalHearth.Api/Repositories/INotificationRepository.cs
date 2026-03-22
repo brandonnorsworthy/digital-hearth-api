@@ -1,0 +1,17 @@
+using DigitalHearth.Api.Models;
+
+namespace DigitalHearth.Api.Repositories;
+
+public interface INotificationRepository
+{
+    Task<PushSubscription?> GetSubscriptionAsync(int userId, string endpoint, CancellationToken ct);
+    Task<List<PushSubscription>> GetSubscriptionsByUserAsync(int userId, CancellationToken ct);
+    Task AddSubscriptionAsync(PushSubscription sub, CancellationToken ct);
+    Task DeleteSubscriptionAsync(PushSubscription sub, CancellationToken ct);
+    Task DeleteSubscriptionsAsync(List<PushSubscription> subs, CancellationToken ct);
+    Task<List<int>> GetOptedOutTaskIdsAsync(int userId, CancellationToken ct);
+    Task<bool> IsOptedOutAsync(int userId, int taskId, CancellationToken ct);
+    Task AddPreferenceAsync(NotifPreference pref, CancellationToken ct);
+    Task<NotifPreference?> GetPreferenceAsync(int userId, int taskId, CancellationToken ct);
+    Task DeletePreferenceAsync(NotifPreference pref, CancellationToken ct);
+}

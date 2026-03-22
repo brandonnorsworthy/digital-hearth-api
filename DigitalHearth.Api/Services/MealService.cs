@@ -1,11 +1,11 @@
 using DigitalHearth.Api.Data;
 using DigitalHearth.Api.DTOs.Meal;
 using DigitalHearth.Api.Models;
-using Microsoft.EntityFrameworkCore;
+using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
-public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : IMealService
+public class MealService(IMealRepository meals, IHouseholdRepository households, IServiceScopeFactory scopeFactory) : IMealService
 {
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
         new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageData);
@@ -33,16 +33,13 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
         }
         else
         {
-            var household = await db.Households.FindAsync([householdId], ct);
+            var household = await households.GetByIdAsync(householdId, ct);
             week = CurrentWeekStart(household!.WeekResetDay);
         }
 
-        var meals = await db.WeeklyMeals
-            .Where(m => m.HouseholdId == householdId && m.WeekOf == week)
-            .Include(m => m.MealLibrary)
-            .ToListAsync(ct);
+        var mealList = await meals.GetWeeklyAsync(householdId, week, ct);
 
-        return ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Ok(meals.Select(ToWeeklyResponse).ToList());
+        return ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Ok(mealList.Select(ToWeeklyResponse).ToList());
     }
 
     public async Task<ServiceResult<WeeklyMealResponse>> AddWeeklyAsync(
@@ -59,7 +56,7 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
 
         if (req.MealLibraryId.HasValue)
         {
-            var libEntry = await db.MealLibrary.FindAsync([req.MealLibraryId.Value], ct);
+            var libEntry = await meals.GetLibraryByIdAsync(req.MealLibraryId.Value, ct);
             if (libEntry is null || libEntry.HouseholdId != householdId)
                 return ServiceResult<WeeklyMealResponse>.NotFound("Library meal not found");
             name = libEntry.Name;
@@ -82,22 +79,20 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
             MealLibraryId = libraryId
         };
 
-        db.WeeklyMeals.Add(meal);
-        await db.SaveChangesAsync(ct);
+        await meals.AddWeeklyAsync(meal, ct);
 
         return ServiceResult<WeeklyMealResponse>.Ok(ToWeeklyResponse(meal));
     }
 
     public async Task<ServiceResult> DeleteWeeklyAsync(int id, User user, CancellationToken ct = default)
     {
-        var meal = await db.WeeklyMeals.FindAsync([id], ct);
+        var meal = await meals.GetWeeklyByIdAsync(id, ct);
         if (meal is null)
             return ServiceResult.NotFound("Meal not found");
         if (meal.HouseholdId != user.HouseholdId)
             return ServiceResult.Forbidden();
 
-        db.WeeklyMeals.Remove(meal);
-        await db.SaveChangesAsync(ct);
+        await meals.DeleteWeeklyAsync(meal, ct);
         return ServiceResult.Ok();
     }
 
@@ -107,13 +102,9 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
         if (user.HouseholdId != householdId)
             return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Forbidden();
 
-        var meals = await db.MealLibrary
-            .Where(m => m.HouseholdId == householdId)
-            .Include(m => m.CreatedByUser)
-            .OrderByDescending(m => m.CreatedAt)
-            .ToListAsync(ct);
+        var mealList = await meals.GetLibraryAsync(householdId, ct);
 
-        return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Ok(meals.Select(ToLibraryResponse).ToList());
+        return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Ok(mealList.Select(ToLibraryResponse).ToList());
     }
 
     public async Task<ServiceResult<LibraryMealResponse>> AddToLibraryAsync(
@@ -131,8 +122,7 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
             Tags = req.Tags ?? []
         };
 
-        db.MealLibrary.Add(meal);
-        await db.SaveChangesAsync(ct);
+        await meals.AddToLibraryAsync(meal, ct);
         meal.CreatedByUser = user;
 
         // Generate image in background — don't block the response
@@ -141,52 +131,52 @@ public class MealService(AppDbContext db, IServiceScopeFactory scopeFactory) : I
         _ = Task.Run(async () =>
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var scopedMeals = scope.ServiceProvider.GetRequiredService<IMealRepository>();
             var scopedImageGen = scope.ServiceProvider.GetRequiredService<IImageGenerationService>();
 
             var imageUrl = await scopedImageGen.GenerateImageAsync(mealName);
             if (imageUrl is not null)
             {
-                var saved = await scopedDb.MealLibrary.FindAsync(mealId);
+                var saved = await scopedMeals.GetLibraryByIdAsync(mealId, CancellationToken.None);
                 if (saved is not null)
                 {
                     saved.ImageData = imageUrl;
-                    await scopedDb.SaveChangesAsync();
+                    await scopedMeals.SaveAsync(CancellationToken.None);
                 }
             }
-        });
+        }, CancellationToken.None);
 
         return ServiceResult<LibraryMealResponse>.Ok(ToLibraryResponse(meal));
     }
 
     public async Task<ServiceResult> DeleteFromLibraryAsync(int id, User user, CancellationToken ct = default)
     {
-        var meal = await db.MealLibrary.FindAsync([id], ct);
+        var meal = await meals.GetLibraryByIdAsync(id, ct);
         if (meal is null)
             return ServiceResult.NotFound("Library meal not found");
         if (meal.HouseholdId != user.HouseholdId)
             return ServiceResult.Forbidden();
 
-        db.MealLibrary.Remove(meal);
-        await db.SaveChangesAsync(ct);
+        await meals.DeleteFromLibraryAsync(meal, ct);
         return ServiceResult.Ok();
     }
 
     public async Task<ServiceResult<WeeklyMealResponse>> LinkToLibraryAsync(
         int weeklyMealId, PatchWeeklyMealRequest req, User user, CancellationToken ct = default)
     {
-        var meal = await db.WeeklyMeals.FindAsync([weeklyMealId], ct);
+        var meal = await meals.GetWeeklyByIdAsync(weeklyMealId, ct);
         if (meal is null)
             return ServiceResult<WeeklyMealResponse>.NotFound("Weekly meal not found");
         if (meal.HouseholdId != user.HouseholdId)
             return ServiceResult<WeeklyMealResponse>.Forbidden();
 
-        var libEntry = await db.MealLibrary.FindAsync([req.MealLibraryId], ct);
+        var libEntry = await meals.GetLibraryByIdAsync(req.MealLibraryId, ct);
         if (libEntry is null || libEntry.HouseholdId != user.HouseholdId)
             return ServiceResult<WeeklyMealResponse>.NotFound("Library meal not found");
 
         meal.MealLibraryId = libEntry.Id;
-        await db.SaveChangesAsync(ct);
+        await meals.SaveAsync(ct);
 
         return ServiceResult<WeeklyMealResponse>.Ok(ToWeeklyResponse(meal));
     }

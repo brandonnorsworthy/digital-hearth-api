@@ -1,8 +1,8 @@
-using DigitalHearth.Api.Data;
+using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
 public interface IJoinCodeService
 {
-    Task<string> GenerateUniqueCodeAsync(AppDbContext db, CancellationToken ct = default);
+    Task<string> GenerateUniqueCodeAsync(IHouseholdRepository households, CancellationToken ct = default);
 }
