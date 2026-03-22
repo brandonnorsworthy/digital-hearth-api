@@ -18,7 +18,7 @@ public class AuthController(AppDbContext db, ICurrentUserService currentUser) : 
         if (user is null || !BCrypt.Net.BCrypt.Verify(req.Pin, user.PinHash))
             return Unauthorized(new { error = "Invalid credentials" });
 
-        ((CurrentUserService)currentUser).SetUserId(user.Id);
+        currentUser.SetUserId(user.Id);
 
         return Ok(new MeResponse(user.Id, user.Username, user.HouseholdId));
     }
@@ -26,7 +26,7 @@ public class AuthController(AppDbContext db, ICurrentUserService currentUser) : 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        ((CurrentUserService)currentUser).Clear();
+        currentUser.Clear();
         return NoContent();
     }
 

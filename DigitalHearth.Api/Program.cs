@@ -1,6 +1,7 @@
 using DigitalHearth.Api.BackgroundServices;
 using DigitalHearth.Api.Data;
 using DigitalHearth.Api.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,18 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// Session (in-memory cache backing store — fine for LAN)
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(opt =>
-{
-    opt.IdleTimeout = TimeSpan.FromMinutes(
-        builder.Configuration.GetValue<int>("Session:IdleTimeoutMinutes", 10080));
-    opt.Cookie.Name = builder.Configuration["Session:CookieName"] ?? "dh_session";
-    opt.Cookie.HttpOnly = true;
-    opt.Cookie.SameSite = SameSiteMode.Lax;
-    opt.Cookie.IsEssential = true;
-    opt.Cookie.SecurePolicy = CookieSecurePolicy.None; // LAN HTTP
-});
+// Data Protection — persist keys to disk so auth cookies survive restarts
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new System.IO.DirectoryInfo(
+        Path.Combine(builder.Environment.ContentRootPath, "keys")));
 
 // CORS — required for session cookies cross-origin
 var allowedOrigins = builder.Configuration
@@ -65,7 +58,34 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors();
-app.UseSession();
+
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    var method = context.Request.Method;
+    var path = context.Request.Path + context.Request.QueryString;
+
+    string body = string.Empty;
+    if (context.Request.ContentLength > 0 && context.Request.Body.CanRead)
+    {
+        context.Request.EnableBuffering();
+        using var reader = new System.IO.StreamReader(
+            context.Request.Body,
+            leaveOpen: true);
+        body = await reader.ReadToEndAsync();
+        context.Request.Body.Position = 0;
+    }
+
+    if (string.IsNullOrEmpty(body))
+        logger.LogInformation("→ {Method} {Path}", method, path);
+    else
+        logger.LogInformation("→ {Method} {Path} | {Body}", method, path, body);
+
+    await next();
+
+    logger.LogInformation("← {StatusCode} {Method} {Path}", context.Response.StatusCode, method, path);
+});
+
 app.MapControllers();
 
 app.Run();

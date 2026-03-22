@@ -1,17 +1,28 @@
 using DigitalHearth.Api.Data;
 using DigitalHearth.Api.Models;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace DigitalHearth.Api.Services;
 
-public class CurrentUserService(IHttpContextAccessor httpContextAccessor, AppDbContext db)
+public class CurrentUserService(IHttpContextAccessor httpContextAccessor, AppDbContext db, IDataProtectionProvider dpProvider)
     : ICurrentUserService
 {
-    private const string SessionKey = "userId";
+    private const string CookieName = "dh_auth";
+    private readonly IDataProtector _protector = dpProvider.CreateProtector("DigitalHearth.Auth");
 
     public int? GetUserId()
     {
-        var session = httpContextAccessor.HttpContext?.Session;
-        return session?.GetInt32(SessionKey);
+        var ctx = httpContextAccessor.HttpContext;
+        if (ctx is null) return null;
+        if (!ctx.Request.Cookies.TryGetValue(CookieName, out var value)) return null;
+        try
+        {
+            return int.Parse(_protector.Unprotect(value));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public bool IsAuthenticated => GetUserId().HasValue;
@@ -24,8 +35,17 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor, AppDbC
     }
 
     public void SetUserId(int userId)
-        => httpContextAccessor.HttpContext!.Session.SetInt32(SessionKey, userId);
+    {
+        var value = _protector.Protect(userId.ToString());
+        httpContextAccessor.HttpContext!.Response.Cookies.Append(CookieName, value, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            IsEssential = true,
+            Expires = DateTimeOffset.MaxValue,
+        });
+    }
 
     public void Clear()
-        => httpContextAccessor.HttpContext!.Session.Clear();
+        => httpContextAccessor.HttpContext!.Response.Cookies.Delete(CookieName);
 }

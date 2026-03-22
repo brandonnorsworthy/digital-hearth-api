@@ -1,4 +1,5 @@
 .env
+keys/
 **/appsettings.*.json
 *.swp
 *.*~

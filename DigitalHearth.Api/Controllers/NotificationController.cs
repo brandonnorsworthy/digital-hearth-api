@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DigitalHearth.Api.Controllers;
 
 [ApiController]
-public class NotificationController(AppDbContext db, ICurrentUserService currentUser, IConfiguration config) : ApiControllerBase
+public class NotificationController(AppDbContext db, ICurrentUserService currentUser, IConfiguration config, IPushNotificationService push) : ApiControllerBase
 {
     private readonly IConfiguration _config = config;
     [HttpGet("api/notifications/vapid-public-key")]
@@ -116,4 +116,13 @@ public class NotificationController(AppDbContext db, ICurrentUserService current
 
         return NoContent();
     }
+
+#if DEBUG
+    [HttpPost("api/notifications/test/{userId:int}")]
+    public async Task<IActionResult> Test(int userId, CancellationToken ct)
+    {
+        await push.SendToUserAsync(userId, "Test Notification", "Push is working!", ct);
+        return Ok(new { sent = true });
+    }
+#endif
 }
