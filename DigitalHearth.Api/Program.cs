@@ -32,6 +32,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IHouseholdService, HouseholdService>();
+builder.Services.AddScoped<IMealService, MealService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<TaskDueCheckerService>();
 
 builder.Services.AddControllers()
