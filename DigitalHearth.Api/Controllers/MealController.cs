@@ -5,8 +5,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace DigitalHearth.Api.Controllers;
 
 [ApiController]
-public class MealController(ICurrentUserService currentUser, IMealService mealService) : ApiControllerBase
+public class MealController(ICurrentUserService currentUser, IMealService mealService, IImageGenerationService imageGeneration) : ApiControllerBase
 {
+    [HttpPost("api/meals/generate-image")]
+    public async Task<IActionResult> GenerateImage([FromBody] GenerateImageRequest req, CancellationToken ct)
+    {
+        var (_, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+
+        var imageUrl = await imageGeneration.GenerateImageAsync(req.MealName, ct);
+        if (imageUrl is null)
+            return BadRequest(new { error = "Image generation failed or is not configured" });
+
+        return Ok(new { imageUrl });
+    }
+
     [HttpGet("api/households/{householdId:int}/meals/weekly")]
     public async Task<IActionResult> GetWeekly(int householdId, [FromQuery] string? weekOf, CancellationToken ct)
     {
@@ -23,6 +36,14 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         var result = await mealService.AddWeeklyAsync(householdId, req, user!, ct);
         if (!result.IsSuccess) return ToActionResult(result);
         return CreatedAtAction(nameof(GetWeekly), new { householdId }, result.Value);
+    }
+
+    [HttpPatch("api/meals/weekly/{id:int}")]
+    public async Task<IActionResult> PatchWeekly(int id, [FromBody] PatchWeeklyMealRequest req, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await mealService.LinkToLibraryAsync(id, req, user!, ct));
     }
 
     [HttpDelete("api/meals/weekly/{id:int}")]
