@@ -37,9 +37,11 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor, AppDbC
     public void SetUserId(int userId)
     {
         var value = _protector.Protect(userId.ToString());
-        httpContextAccessor.HttpContext!.Response.Cookies.Append(CookieName, value, new CookieOptions
+        var ctx = httpContextAccessor.HttpContext!;
+        ctx.Response.Cookies.Append(CookieName, value, new CookieOptions
         {
             HttpOnly = true,
+            Secure = ctx.Request.IsHttps,
             SameSite = SameSiteMode.Lax,
             IsEssential = true,
             Expires = DateTimeOffset.MaxValue,

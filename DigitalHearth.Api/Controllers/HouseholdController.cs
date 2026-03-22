@@ -17,11 +17,11 @@ public class HouseholdController(
     private static readonly string[] ValidDays =
         ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-    private static int DayNameToInt(string? name) =>
-        (name ?? "Monday").ToLowerInvariant() switch
+    private static int DayNameToInt(string name) =>
+        name.ToLowerInvariant() switch
         {
             "sunday" => 0, "monday" => 1, "tuesday" => 2, "wednesday" => 3,
-            "thursday" => 4, "friday" => 5, "saturday" => 6, _ => 1
+            "thursday" => 4, "friday" => 5, "saturday" => 6, _ => -1
         };
 
     private static string DayIntToName(int day) =>
@@ -40,7 +40,12 @@ public class HouseholdController(
         if (string.IsNullOrWhiteSpace(req.HouseholdName) || string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Pin))
             return BadRequest(new { error = "HouseholdName, Username, and Pin are required" });
 
-        if (await db.Users.AnyAsync(u => u.Username.ToLower() == req.Username.ToLower(), ct))
+        var weekResetDay = DayNameToInt(req.WeekResetDay ?? "Monday");
+        if (weekResetDay < 0)
+            return BadRequest(new { error = "WeekResetDay must be a valid day name (e.g. Monday)" });
+
+        var normalizedUsername = req.Username.ToLowerInvariant();
+        if (await db.Users.AnyAsync(u => u.Username == normalizedUsername, ct))
             return Conflict(new { error = "Username already taken" });
 
         var joinCode = await joinCodeService.GenerateUniqueCodeAsync(db, ct);
@@ -49,14 +54,14 @@ public class HouseholdController(
         {
             Name = req.HouseholdName,
             JoinCode = joinCode,
-            WeekResetDay = DayNameToInt(req.WeekResetDay)
+            WeekResetDay = weekResetDay
         };
         db.Households.Add(household);
         await db.SaveChangesAsync(ct);
 
         var user = new User
         {
-            Username = req.Username,
+            Username = normalizedUsername,
             PinHash = BCrypt.Net.BCrypt.HashPassword(req.Pin),
             Role = "admin",
             HouseholdId = household.Id
@@ -64,7 +69,7 @@ public class HouseholdController(
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
 
-        ((CurrentUserService)currentUser).SetUserId(user.Id);
+        currentUser.SetUserId(user.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = household.Id }, new
         {
@@ -82,12 +87,13 @@ public class HouseholdController(
         if (household is null)
             return NotFound(new { error = "Join code not found" });
 
-        if (await db.Users.AnyAsync(u => u.Username.ToLower() == req.Username.ToLower(), ct))
+        var normalizedUsername = req.Username.ToLowerInvariant();
+        if (await db.Users.AnyAsync(u => u.Username == normalizedUsername, ct))
             return Conflict(new { error = "Username already taken" });
 
         var user = new User
         {
-            Username = req.Username,
+            Username = normalizedUsername,
             PinHash = BCrypt.Net.BCrypt.HashPassword(req.Pin),
             Role = "member",
             HouseholdId = household.Id
@@ -95,7 +101,7 @@ public class HouseholdController(
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
 
-        ((CurrentUserService)currentUser).SetUserId(user.Id);
+        currentUser.SetUserId(user.Id);
 
         return Ok(new
         {
@@ -152,7 +158,13 @@ public class HouseholdController(
         if (household is null) return NotFound(new { error = "Household not found" });
 
         if (req.Name is not null) household.Name = req.Name;
-        if (req.WeekResetDay is not null) household.WeekResetDay = DayNameToInt(req.WeekResetDay);
+        if (req.WeekResetDay is not null)
+        {
+            var day = DayNameToInt(req.WeekResetDay);
+            if (day < 0)
+                return BadRequest(new { error = "WeekResetDay must be a valid day name (e.g. Monday)" });
+            household.WeekResetDay = day;
+        }
 
         await db.SaveChangesAsync(ct);
         return Ok(ToResponse(household));

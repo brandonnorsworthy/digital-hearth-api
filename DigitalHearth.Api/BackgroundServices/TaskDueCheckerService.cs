@@ -11,8 +11,6 @@ public class TaskDueCheckerService(IServiceScopeFactory scopeFactory, ILogger<Ta
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
-
             try
             {
                 using var scope = scopeFactory.CreateScope();
@@ -22,18 +20,17 @@ public class TaskDueCheckerService(IServiceScopeFactory scopeFactory, ILogger<Ta
                 var now = DateTime.UtcNow;
                 var windowStart = now.AddHours(-1);
 
+                // Filter in SQL: only fetch tasks whose due date falls in the last hour window
                 var tasks = await db.RecurringTasks
+                    .Where(t =>
+                        (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays) >= windowStart &&
+                        (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays) < now)
                     .Include(t => t.NotifPreferences)
                     .Include(t => t.Household).ThenInclude(h => h.Members)
                     .ToListAsync(stoppingToken);
 
                 foreach (var task in tasks)
                 {
-                    var nextDueAt = (task.LastCompletedAt ?? task.CreatedAt).AddDays(task.IntervalDays);
-
-                    // Notify only when the task first became overdue within the last hour window
-                    if (nextDueAt < windowStart || nextDueAt >= now) continue;
-
                     var optedOutUserIds = task.NotifPreferences
                         .Select(p => p.UserId)
                         .ToHashSet();
@@ -54,6 +51,8 @@ public class TaskDueCheckerService(IServiceScopeFactory scopeFactory, ILogger<Ta
             {
                 logger.LogError(ex, "Error in TaskDueCheckerService");
             }
+
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
 }

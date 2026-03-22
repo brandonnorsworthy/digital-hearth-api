@@ -9,13 +9,19 @@ namespace DigitalHearth.Api.Controllers;
 [Route("api/auth")]
 public class AuthController(AppDbContext db, ICurrentUserService currentUser) : ApiControllerBase
 {
+    // Pre-computed hash used when the username isn't found, so response time
+    // is the same regardless of whether the username exists (prevents enumeration).
+    private const string DummyHash = "$2a$11$eSPCGzGJcO1ZFsJBKXSaXO2UTtb2qmI9ldxZR.4zUPQTbqnGxPVUe";
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken ct)
     {
+        var normalizedUsername = req.Username.ToLowerInvariant();
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == req.Username.ToLower(), ct);
+            .FirstOrDefaultAsync(u => u.Username == normalizedUsername, ct);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(req.Pin, user.PinHash))
+        var hash = user?.PinHash ?? DummyHash;
+        if (!BCrypt.Net.BCrypt.Verify(req.Pin, hash) || user is null)
             return Unauthorized(new { error = "Invalid credentials" });
 
         currentUser.SetUserId(user.Id);

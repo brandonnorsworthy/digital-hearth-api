@@ -10,11 +10,10 @@ namespace DigitalHearth.Api.Controllers;
 [ApiController]
 public class NotificationController(AppDbContext db, ICurrentUserService currentUser, IConfiguration config, IPushNotificationService push) : ApiControllerBase
 {
-    private readonly IConfiguration _config = config;
     [HttpGet("api/notifications/vapid-public-key")]
     public IActionResult GetVapidPublicKey()
     {
-        var publicKey = _config["Vapid:PublicKey"];
+        var publicKey = config["Vapid:PublicKey"];
         if (string.IsNullOrEmpty(publicKey))
             return StatusCode(503, new { error = "VAPID keys not configured" });
 

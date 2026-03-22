@@ -82,7 +82,6 @@ app.Use(async (context, next) =>
         logger.LogInformation("→ {Method} {Path} | {Body}", method, path, body);
 
     await next();
-
     logger.LogInformation("← {StatusCode} {Method} {Path}", context.Response.StatusCode, method, path);
 });
 

@@ -16,10 +16,10 @@ public class MealController(AppDbContext db, ICurrentUserService currentUser) : 
     private static LibraryMealResponse ToLibraryResponse(MealLibrary m) =>
         new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt);
 
-    private static DateOnly CurrentWeekMonday()
+    private static DateOnly CurrentWeekStart(int weekResetDay)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var offset = ((int)today.DayOfWeek + 6) % 7; // Mon=0
+        var offset = ((int)today.DayOfWeek - weekResetDay + 7) % 7;
         return today.AddDays(-offset);
     }
 
@@ -31,9 +31,16 @@ public class MealController(AppDbContext db, ICurrentUserService currentUser) : 
 
         if (user!.HouseholdId != householdId) return Forbid();
 
-        var week = weekOf is not null && DateOnly.TryParse(weekOf, out var parsed)
-            ? parsed
-            : CurrentWeekMonday();
+        DateOnly week;
+        if (weekOf is not null && DateOnly.TryParse(weekOf, out var parsed))
+        {
+            week = parsed;
+        }
+        else
+        {
+            var household = await db.Households.FindAsync([householdId], ct);
+            week = CurrentWeekStart(household!.WeekResetDay);
+        }
 
         var meals = await db.WeeklyMeals
             .Where(m => m.HouseholdId == householdId && m.WeekOf == week)
