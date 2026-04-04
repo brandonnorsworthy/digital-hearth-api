@@ -5,7 +5,7 @@ using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
-public class MealService(IMealRepository meals, IHouseholdRepository households, IServiceScopeFactory scopeFactory) : IMealService
+public class MealService(IMealRepository meals, IHouseholdRepository households, IServiceScopeFactory scopeFactory, IImageGenerationService imageGeneration) : IMealService
 {
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
         new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageData is not null);
@@ -180,6 +180,22 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             await meals.FavoriteMealAsync(user.Id, mealLibraryId, ct);
         else
             await meals.UnfavoriteMealAsync(user.Id, mealLibraryId, ct);
+
+        return ServiceResult.Ok();
+    }
+
+    public async Task<ServiceResult> RegenerateImageAsync(int mealId, User user, CancellationToken ct = default)
+    {
+        var meal = await meals.GetLibraryByIdAsync(mealId, ct);
+        if (meal is null) return ServiceResult.NotFound("Library meal not found");
+        if (meal.HouseholdId != user.HouseholdId) return ServiceResult.Forbidden();
+
+        var imageData = await imageGeneration.GenerateImageAsync(meal.Name, ct);
+        if (imageData is null)
+            return ServiceResult.BadRequest("Image generation failed or is not configured");
+
+        meal.ImageData = imageData;
+        await meals.SaveAsync(ct);
 
         return ServiceResult.Ok();
     }

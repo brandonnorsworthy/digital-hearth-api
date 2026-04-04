@@ -112,4 +112,12 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         if (error is not null) return error;
         return ToActionResult(await mealService.ToggleFavoriteAsync(id, false, user!, ct));
     }
+
+    [HttpPost("api/meals/library/{id:int}/regenerate-image")]
+    public async Task<IActionResult> RegenerateImage(int id, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await mealService.RegenerateImageAsync(id, user!, ct));
+    }
 }
