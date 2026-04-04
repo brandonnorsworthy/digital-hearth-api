@@ -203,13 +203,27 @@ public class MealServiceTests
     [Fact]
     public async Task GetLibrary_UserInHousehold_ReturnsOk()
     {
-        _meals.Setup(r => r.GetLibraryAsync(10, default)).ReturnsAsync([MealFixtures.LibraryMeal()]);
         var user = UserFixtures.InHousehold(10);
+        _meals.Setup(r => r.GetLibraryAsync(10, default)).ReturnsAsync([MealFixtures.LibraryMeal()]);
+        _meals.Setup(r => r.GetFavoriteIdsAsync(user.Id, 10, default)).ReturnsAsync([]);
 
         var result = await _sut.GetLibraryAsync(10, user);
 
         result.Status.Should().Be(ServiceResultStatus.Ok);
         result.Value!.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetLibrary_FavoriteIdsIncludedInResponse()
+    {
+        var user = UserFixtures.InHousehold(10);
+        var meal = MealFixtures.LibraryMeal(id: 5, householdId: 10);
+        _meals.Setup(r => r.GetLibraryAsync(10, default)).ReturnsAsync([meal]);
+        _meals.Setup(r => r.GetFavoriteIdsAsync(user.Id, 10, default)).ReturnsAsync([5]);
+
+        var result = await _sut.GetLibraryAsync(10, user);
+
+        result.Value![0].IsFavorited.Should().BeTrue();
     }
 
     [Fact]
@@ -362,6 +376,57 @@ public class MealServiceTests
         var user = UserFixtures.InHousehold(10);
 
         var result = await _sut.LinkToLibraryAsync(1, new PatchWeeklyMealRequest(5), user);
+
+        result.Status.Should().Be(ServiceResultStatus.NotFound);
+    }
+
+    // --- ToggleFavorite ---
+
+    [Fact]
+    public async Task ToggleFavorite_FavoriteTrue_CallsFavoriteMeal()
+    {
+        var meal = MealFixtures.LibraryMeal(id: 5, householdId: 10);
+        _meals.Setup(r => r.GetLibraryByIdAsync(5, default)).ReturnsAsync(meal);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.ToggleFavoriteAsync(5, true, user);
+
+        result.IsSuccess.Should().BeTrue();
+        _meals.Verify(r => r.FavoriteMealAsync(user.Id, 5, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ToggleFavorite_FavoriteFalse_CallsUnfavoriteMeal()
+    {
+        var meal = MealFixtures.LibraryMeal(id: 5, householdId: 10);
+        _meals.Setup(r => r.GetLibraryByIdAsync(5, default)).ReturnsAsync(meal);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.ToggleFavoriteAsync(5, false, user);
+
+        result.IsSuccess.Should().BeTrue();
+        _meals.Verify(r => r.UnfavoriteMealAsync(user.Id, 5, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ToggleFavorite_MealNotFound_ReturnsNotFound()
+    {
+        _meals.Setup(r => r.GetLibraryByIdAsync(99, default)).ReturnsAsync((MealLibrary?)null);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.ToggleFavoriteAsync(99, true, user);
+
+        result.Status.Should().Be(ServiceResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task ToggleFavorite_MealInDifferentHousehold_ReturnsNotFound()
+    {
+        var meal = MealFixtures.LibraryMeal(id: 5, householdId: 99);
+        _meals.Setup(r => r.GetLibraryByIdAsync(5, default)).ReturnsAsync(meal);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.ToggleFavoriteAsync(5, true, user);
 
         result.Status.Should().Be(ServiceResultStatus.NotFound);
     }

@@ -96,4 +96,20 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         if (error is not null) return error;
         return ToActionResult(await mealService.DeleteFromLibraryAsync(id, user!, ct));
     }
+
+    [HttpPost("api/meals/library/{id:int}/favorite")]
+    public async Task<IActionResult> FavoriteMeal(int id, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await mealService.ToggleFavoriteAsync(id, true, user!, ct));
+    }
+
+    [HttpDelete("api/meals/library/{id:int}/favorite")]
+    public async Task<IActionResult> UnfavoriteMeal(int id, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await mealService.ToggleFavoriteAsync(id, false, user!, ct));
+    }
 }

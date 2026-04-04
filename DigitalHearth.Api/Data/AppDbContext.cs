@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NotifPreference> NotifPreferences => Set<NotifPreference>();
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
     public DbSet<UserNotifSettings> UserNotifSettings => Set<UserNotifSettings>();
+    public DbSet<MealFavorite> MealFavorites => Set<MealFavorite>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -67,6 +68,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // UserNotifSettings: one-to-one with User
         b.Entity<UserNotifSettings>()
             .HasIndex(s => s.UserId).IsUnique();
+
+        // MealFavorite: unique per (userId, mealLibraryId)
+        b.Entity<MealFavorite>()
+            .HasIndex(f => new { f.UserId, f.MealLibraryId }).IsUnique();
+
+        b.Entity<MealFavorite>()
+            .HasOne(f => f.MealLibrary)
+            .WithMany()
+            .HasForeignKey(f => f.MealLibraryId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // WeeklyMeal
         b.Entity<WeeklyMeal>()

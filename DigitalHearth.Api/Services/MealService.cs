@@ -10,8 +10,8 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
         new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageData is not null);
 
-    private static LibraryMealResponse ToLibraryResponse(MealLibrary m) =>
-        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.ImageData is not null);
+    private static LibraryMealResponse ToLibraryResponse(MealLibrary m, HashSet<int>? favoriteIds = null) =>
+        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.ImageData is not null, favoriteIds?.Contains(m.Id) ?? false);
 
     private static DateOnly CurrentWeekStart(int weekResetDay)
     {
@@ -103,8 +103,9 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Forbidden();
 
         var mealList = await meals.GetLibraryAsync(householdId, ct);
+        var favoriteIds = await meals.GetFavoriteIdsAsync(user.Id, householdId, ct);
 
-        return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Ok(mealList.Select(ToLibraryResponse).ToList());
+        return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Ok(mealList.Select(m => ToLibraryResponse(m, favoriteIds)).ToList());
     }
 
     public async Task<ServiceResult<LibraryMealResponse>> AddToLibraryAsync(
@@ -166,6 +167,20 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             return ServiceResult.Forbidden();
 
         await meals.DeleteFromLibraryAsync(meal, ct);
+        return ServiceResult.Ok();
+    }
+
+    public async Task<ServiceResult> ToggleFavoriteAsync(int mealLibraryId, bool favorite, User user, CancellationToken ct = default)
+    {
+        var meal = await meals.GetLibraryByIdAsync(mealLibraryId, ct);
+        if (meal is null || meal.HouseholdId != user.HouseholdId)
+            return ServiceResult.NotFound("Library meal not found");
+
+        if (favorite)
+            await meals.FavoriteMealAsync(user.Id, mealLibraryId, ct);
+        else
+            await meals.UnfavoriteMealAsync(user.Id, mealLibraryId, ct);
+
         return ServiceResult.Ok();
     }
 

@@ -13,4 +13,7 @@ public interface IMealRepository
     Task<MealLibrary?> GetLibraryByIdAsync(int id, CancellationToken ct);
     Task DeleteFromLibraryAsync(MealLibrary meal, CancellationToken ct);
     Task SaveAsync(CancellationToken ct);
+    Task<HashSet<int>> GetFavoriteIdsAsync(int userId, int householdId, CancellationToken ct);
+    Task FavoriteMealAsync(int userId, int mealLibraryId, CancellationToken ct);
+    Task UnfavoriteMealAsync(int userId, int mealLibraryId, CancellationToken ct);
 }

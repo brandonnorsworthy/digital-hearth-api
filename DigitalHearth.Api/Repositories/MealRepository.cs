@@ -65,4 +65,30 @@ public class MealRepository(AppDbContext db) : IMealRepository
     {
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<HashSet<int>> GetFavoriteIdsAsync(int userId, int householdId, CancellationToken ct)
+    {
+        var ids = await db.MealFavorites
+            .Where(f => f.UserId == userId && f.MealLibrary.HouseholdId == householdId)
+            .Select(f => f.MealLibraryId)
+            .ToListAsync(ct);
+        return [.. ids];
+    }
+
+    public async Task FavoriteMealAsync(int userId, int mealLibraryId, CancellationToken ct)
+    {
+        var exists = await db.MealFavorites
+            .AnyAsync(f => f.UserId == userId && f.MealLibraryId == mealLibraryId, ct);
+        if (exists) return;
+
+        db.MealFavorites.Add(new Models.MealFavorite { UserId = userId, MealLibraryId = mealLibraryId });
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UnfavoriteMealAsync(int userId, int mealLibraryId, CancellationToken ct)
+    {
+        await db.MealFavorites
+            .Where(f => f.UserId == userId && f.MealLibraryId == mealLibraryId)
+            .ExecuteDeleteAsync(ct);
+    }
 }

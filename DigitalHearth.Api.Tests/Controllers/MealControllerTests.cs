@@ -16,7 +16,7 @@ public class MealControllerTests
     private readonly MealController _sut;
 
     private static readonly WeeklyMealResponse FakeWeekly = new(1, "2025-01-06", "Pasta", null, false, false);
-    private static readonly LibraryMealResponse FakeLibrary = new(1, "Pasta", "alice", DateTime.UtcNow, [], false);
+    private static readonly LibraryMealResponse FakeLibrary = new(1, "Pasta", "alice", DateTime.UtcNow, [], false, false);
 
     public MealControllerTests()
     {
@@ -298,5 +298,65 @@ public class MealControllerTests
         var result = await _sut.DeleteFromLibrary(1, default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    // --- FavoriteMeal ---
+
+    [Fact]
+    public async Task FavoriteMeal_Authenticated_ServiceReturnsOk_Returns204()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.ToggleFavoriteAsync(1, true, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.Ok());
+
+        var result = await _sut.FavoriteMeal(1, default);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task FavoriteMeal_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.FavoriteMeal(1, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task FavoriteMeal_ServiceReturnsNotFound_Returns404()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.ToggleFavoriteAsync(1, true, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.NotFound("Library meal not found"));
+
+        var result = await _sut.FavoriteMeal(1, default);
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    // --- UnfavoriteMeal ---
+
+    [Fact]
+    public async Task UnfavoriteMeal_Authenticated_ServiceReturnsOk_Returns204()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.ToggleFavoriteAsync(1, false, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.Ok());
+
+        var result = await _sut.UnfavoriteMeal(1, default);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task UnfavoriteMeal_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.UnfavoriteMeal(1, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 }

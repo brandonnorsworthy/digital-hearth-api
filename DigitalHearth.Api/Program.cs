@@ -9,7 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // EF Core + Npgsql
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default"),
+        npgsql => npgsql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // Data Protection — persist keys to disk so auth cookies survive restarts
 builder.Services.AddDataProtection()
