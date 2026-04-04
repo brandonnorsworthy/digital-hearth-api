@@ -359,4 +359,52 @@ public class MealControllerTests
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
+
+    // --- RegenerateImage ---
+
+    [Fact]
+    public async Task RegenerateImage_Authenticated_ServiceReturnsOk_Returns204()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.Ok());
+
+        var result = await _sut.RegenerateImage(1, default);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task RegenerateImage_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.RegenerateImage(1, default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task RegenerateImage_ServiceReturnsNotFound_Returns404()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.NotFound("Library meal not found"));
+
+        var result = await _sut.RegenerateImage(1, default);
+
+        result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task RegenerateImage_ServiceReturnsBadRequest_Returns400()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
+        _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
+            .ReturnsAsync(ServiceResult.BadRequest("Image generation failed or is not configured"));
+
+        var result = await _sut.RegenerateImage(1, default);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
 }

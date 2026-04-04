@@ -15,11 +15,12 @@ public class MealServiceTests
     private readonly Mock<IHouseholdRepository> _households = new();
     // Mocked as no-op — background image generation is out of scope for unit tests
     private readonly Mock<IServiceScopeFactory> _scopeFactory = new();
+    private readonly Mock<IImageGenerationService> _imageGen = new();
     private readonly MealService _sut;
 
     public MealServiceTests()
     {
-        _sut = new MealService(_meals.Object, _households.Object, _scopeFactory.Object);
+        _sut = new MealService(_meals.Object, _households.Object, _scopeFactory.Object, _imageGen.Object);
     }
 
     // --- GetWeekly ---
@@ -429,5 +430,58 @@ public class MealServiceTests
         var result = await _sut.ToggleFavoriteAsync(5, true, user);
 
         result.Status.Should().Be(ServiceResultStatus.NotFound);
+    }
+
+    // --- RegenerateImage ---
+
+    [Fact]
+    public async Task RegenerateImage_MealNotFound_ReturnsNotFound()
+    {
+        _meals.Setup(r => r.GetLibraryByIdAsync(1, default)).ReturnsAsync((MealLibrary?)null);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.RegenerateImageAsync(1, user);
+
+        result.Status.Should().Be(ServiceResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task RegenerateImage_MealInDifferentHousehold_ReturnsForbidden()
+    {
+        var meal = MealFixtures.LibraryMeal(id: 1, householdId: 99);
+        _meals.Setup(r => r.GetLibraryByIdAsync(1, default)).ReturnsAsync(meal);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.RegenerateImageAsync(1, user);
+
+        result.Status.Should().Be(ServiceResultStatus.Forbidden);
+    }
+
+    [Fact]
+    public async Task RegenerateImage_ImageGenFails_ReturnsBadRequest()
+    {
+        var meal = MealFixtures.LibraryMeal(id: 1, householdId: 10, name: "Pasta");
+        _meals.Setup(r => r.GetLibraryByIdAsync(1, default)).ReturnsAsync(meal);
+        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", default)).ReturnsAsync((string?)null);
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.RegenerateImageAsync(1, user);
+
+        result.Status.Should().Be(ServiceResultStatus.BadRequest);
+    }
+
+    [Fact]
+    public async Task RegenerateImage_Success_SavesImageDataAndReturnsOk()
+    {
+        var meal = MealFixtures.LibraryMeal(id: 1, householdId: 10, name: "Pasta");
+        _meals.Setup(r => r.GetLibraryByIdAsync(1, default)).ReturnsAsync(meal);
+        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", default)).ReturnsAsync("data:image/png;base64,abc");
+        var user = UserFixtures.InHousehold(10);
+
+        var result = await _sut.RegenerateImageAsync(1, user);
+
+        result.Status.Should().Be(ServiceResultStatus.Ok);
+        meal.ImageData.Should().Be("data:image/png;base64,abc");
+        _meals.Verify(r => r.SaveAsync(default), Times.Once);
     }
 }
