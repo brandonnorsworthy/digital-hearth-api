@@ -4,14 +4,18 @@ services:
       context: .
       dockerfile: DigitalHearth.Api/Dockerfile
     container_name: digitalhearth-api
-    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__Default=${CONNECTION_STRINGS__DEFAULT}
-      - Vapid__PublicKey=${VAPID_PUBLIC_KEY}
-      - Vapid__PrivateKey=${VAPID_PRIVATE_KEY}
-      - Vapid__Subject=${VAPID_SUBJECT}
+      - ConnectionStrings__Default=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
     ports:
-      - "8080:8080"
-    mem_limit: 256m
+      - "3020:8080"
+    volumes:
+      - keys_data:/app/keys
+    restart: unless-stopped
     stop_grace_period: 30s
+    mem_limit: 512m
+    cpus: 1
+
+volumes:
+  keys_data:
