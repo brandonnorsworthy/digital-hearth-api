@@ -6,8 +6,6 @@ services:
     container_name: digitalhearth-api
     env_file:
       - .env
-    environment:
-      - ConnectionStrings__Default=Host=${POSTGRES_HOST};Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
     ports:
       - "3020:8080"
     volumes:
