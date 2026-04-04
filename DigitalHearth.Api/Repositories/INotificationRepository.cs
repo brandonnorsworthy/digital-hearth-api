@@ -16,4 +16,6 @@ public interface INotificationRepository
     Task DeletePreferenceAsync(NotifPreference pref, CancellationToken ct);
     Task<bool> HasLogAsync(int subscriptionId, int taskId, DateTime dueAt, CancellationToken ct);
     Task AddLogAsync(NotificationLog log, CancellationToken ct);
+    Task<UserNotifSettings?> GetUserNotifSettingsAsync(int userId, CancellationToken ct);
+    Task UpsertUserNotifSettingsAsync(UserNotifSettings settings, CancellationToken ct);
 }

@@ -13,4 +13,5 @@ public class User
     public ICollection<PushSubscription> PushSubscriptions { get; set; } = [];
     public ICollection<NotifPreference> NotifPreferences { get; set; } = [];
     public ICollection<MealLibrary> CreatedMeals { get; set; } = [];
+    public UserNotifSettings? NotifSettings { get; set; }
 }

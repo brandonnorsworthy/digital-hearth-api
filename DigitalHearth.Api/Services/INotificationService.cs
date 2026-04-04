@@ -10,4 +10,6 @@ public interface INotificationService
     Task<ServiceResult<PreferencesResponse>> GetPreferencesAsync(int householdId, User user, CancellationToken ct = default);
     Task<ServiceResult> OptOutAsync(OptOutRequest req, User user, CancellationToken ct = default);
     Task<ServiceResult> RemoveOptOutAsync(int taskId, User user, CancellationToken ct = default);
+    Task<ServiceResult<UserNotifSettingsResponse>> GetUserNotifSettingsAsync(User user, CancellationToken ct = default);
+    Task<ServiceResult> UpdateUserNotifSettingsAsync(UpdateUserNotifSettingsRequest req, User user, CancellationToken ct = default);
 }

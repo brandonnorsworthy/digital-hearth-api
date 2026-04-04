@@ -16,4 +16,22 @@ public class AuthService(IUserRepository users, ICurrentUserService currentUser)
 
         return ServiceResult<MeResponse>.Ok(new MeResponse(user.Id, user.Username, user.HouseholdId));
     }
+
+    public async Task<ServiceResult> ChangePinAsync(int userId, ChangePinRequest req, CancellationToken ct = default)
+    {
+        var user = await users.GetByIdAsync(userId, ct);
+        if (user is null)
+            return ServiceResult.Unauthorized("Not authenticated");
+
+        if (!BCrypt.Net.BCrypt.Verify(req.CurrentPin, user.PinHash))
+            return ServiceResult.Unauthorized("Current PIN is incorrect");
+
+        if (req.NewPin.Length != 4 || !req.NewPin.All(char.IsDigit))
+            return ServiceResult.BadRequest("New PIN must be exactly 4 digits");
+
+        var newHash = BCrypt.Net.BCrypt.HashPassword(req.NewPin);
+        await users.UpdatePinHashAsync(userId, newHash, ct);
+
+        return ServiceResult.Ok();
+    }
 }

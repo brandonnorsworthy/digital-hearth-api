@@ -75,4 +75,56 @@ public class AuthServiceTests
 
         _currentUser.Verify(s => s.SetUserId(It.IsAny<int>()), Times.Never);
     }
+
+    // --- ChangePin ---
+
+    [Fact]
+    public async Task ChangePin_ValidRequest_UpdatesPinHash()
+    {
+        var user = UserFixtures.Member();
+        _users.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+
+        var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("1234", "5678"));
+
+        result.IsSuccess.Should().BeTrue();
+        _users.Verify(r => r.UpdatePinHashAsync(user.Id, It.Is<string>(h => BCrypt.Net.BCrypt.Verify("5678", h)), default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangePin_UserNotFound_ReturnsUnauthorized()
+    {
+        _users.Setup(r => r.GetByIdAsync(It.IsAny<int>(), default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.ChangePinAsync(99, new ChangePinRequest("1234", "5678"));
+
+        result.Status.Should().Be(ServiceResultStatus.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ChangePin_WrongCurrentPin_ReturnsUnauthorized()
+    {
+        var user = UserFixtures.Member();
+        _users.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+
+        var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("wrong", "5678"));
+
+        result.Status.Should().Be(ServiceResultStatus.Unauthorized);
+        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<int>(), It.IsAny<string>(), default), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("123")]
+    [InlineData("12345")]
+    [InlineData("abcd")]
+    [InlineData("")]
+    public async Task ChangePin_InvalidNewPin_ReturnsBadRequest(string newPin)
+    {
+        var user = UserFixtures.Member();
+        _users.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+
+        var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("1234", newPin));
+
+        result.Status.Should().Be(ServiceResultStatus.BadRequest);
+        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<int>(), It.IsAny<string>(), default), Times.Never);
+    }
 }

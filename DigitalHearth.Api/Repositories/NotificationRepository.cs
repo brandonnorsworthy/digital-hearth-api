@@ -82,4 +82,33 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
         db.NotificationLogs.Add(log);
         await db.SaveChangesAsync(ct);
     }
+
+    public async Task<UserNotifSettings?> GetUserNotifSettingsAsync(int userId, CancellationToken ct)
+    {
+        return await db.UserNotifSettings
+            .FirstOrDefaultAsync(s => s.UserId == userId, ct);
+    }
+
+    public async Task UpsertUserNotifSettingsAsync(UserNotifSettings settings, CancellationToken ct)
+    {
+        var existing = await db.UserNotifSettings
+            .FirstOrDefaultAsync(s => s.UserId == settings.UserId, ct);
+
+        if (existing is null)
+        {
+            db.UserNotifSettings.Add(settings);
+        }
+        else
+        {
+            existing.TaskReminderHour = settings.TaskReminderHour;
+            existing.MediumTermDaysAhead = settings.MediumTermDaysAhead;
+            existing.MealPlannerNotifs = settings.MealPlannerNotifs;
+            existing.ShortTermTaskNotifs = settings.ShortTermTaskNotifs;
+            existing.MediumTermTaskNotifs = settings.MediumTermTaskNotifs;
+            existing.LongTermTaskNotifs = settings.LongTermTaskNotifs;
+            existing.TaskCompletedNotifs = settings.TaskCompletedNotifs;
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
 }

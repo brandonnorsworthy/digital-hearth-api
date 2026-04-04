@@ -29,6 +29,13 @@ public class UserRepository(AppDbContext db) : IUserRepository
         return user;
     }
 
+    public async Task UpdatePinHashAsync(int userId, string pinHash, CancellationToken ct)
+    {
+        await db.Users
+            .Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.PinHash, pinHash), ct);
+    }
+
     public async Task<List<MemberResponse>> GetMembersByHouseholdAsync(int householdId, CancellationToken ct)
     {
         return await db.Users

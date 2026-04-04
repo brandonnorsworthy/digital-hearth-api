@@ -62,6 +62,23 @@ public class NotificationController(
         return ToActionResult(await notificationService.RemoveOptOutAsync(taskId, user!, ct));
     }
 
+    [HttpGet("api/notifications/settings")]
+    public async Task<IActionResult> GetUserNotifSettings(CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await notificationService.GetUserNotifSettingsAsync(user!, ct));
+    }
+
+    [HttpPut("api/notifications/settings")]
+    public async Task<IActionResult> UpdateUserNotifSettings(
+        [FromBody] UpdateUserNotifSettingsRequest req, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await notificationService.UpdateUserNotifSettingsAsync(req, user!, ct));
+    }
+
 #if DEBUG
     [HttpPost("api/notifications/test/{userId:int}")]
     public async Task<IActionResult> Test(int userId, CancellationToken ct)

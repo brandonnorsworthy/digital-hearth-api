@@ -85,4 +85,58 @@ public class AuthControllerTests
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
+
+    // --- ChangePin ---
+
+    [Fact]
+    public async Task ChangePin_Authenticated_ServiceReturnsOk_Returns204()
+    {
+        var user = UserFixtures.Member();
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(user);
+        _authService
+            .Setup(s => s.ChangePinAsync(user.Id, It.IsAny<ChangePinRequest>(), default))
+            .ReturnsAsync(ServiceResult.Ok());
+
+        var result = await _sut.ChangePin(new ChangePinRequest("1234", "5678"), default);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task ChangePin_Authenticated_ServiceReturnsUnauthorized_Returns401()
+    {
+        var user = UserFixtures.Member();
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(user);
+        _authService
+            .Setup(s => s.ChangePinAsync(user.Id, It.IsAny<ChangePinRequest>(), default))
+            .ReturnsAsync(ServiceResult.Unauthorized("Current PIN is incorrect"));
+
+        var result = await _sut.ChangePin(new ChangePinRequest("wrong", "5678"), default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task ChangePin_Authenticated_ServiceReturnsBadRequest_Returns400()
+    {
+        var user = UserFixtures.Member();
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(user);
+        _authService
+            .Setup(s => s.ChangePinAsync(user.Id, It.IsAny<ChangePinRequest>(), default))
+            .ReturnsAsync(ServiceResult.BadRequest("New PIN must be exactly 4 digits"));
+
+        var result = await _sut.ChangePin(new ChangePinRequest("1234", "abc"), default);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task ChangePin_NotAuthenticated_Returns401()
+    {
+        _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
+
+        var result = await _sut.ChangePin(new ChangePinRequest("1234", "5678"), default);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
 }

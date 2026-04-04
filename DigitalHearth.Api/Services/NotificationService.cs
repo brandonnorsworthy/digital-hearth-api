@@ -70,4 +70,41 @@ public class NotificationService(INotificationRepository notifications) : INotif
 
         return ServiceResult.Ok();
     }
+
+    public async Task<ServiceResult<UserNotifSettingsResponse>> GetUserNotifSettingsAsync(
+        User user, CancellationToken ct = default)
+    {
+        var settings = await notifications.GetUserNotifSettingsAsync(user.Id, ct);
+
+        var response = settings is null
+            ? new UserNotifSettingsResponse(null, null, true, true, true, true, false)
+            : new UserNotifSettingsResponse(
+                settings.TaskReminderHour,
+                settings.MediumTermDaysAhead,
+                settings.MealPlannerNotifs,
+                settings.ShortTermTaskNotifs,
+                settings.MediumTermTaskNotifs,
+                settings.LongTermTaskNotifs,
+                settings.TaskCompletedNotifs);
+
+        return ServiceResult<UserNotifSettingsResponse>.Ok(response);
+    }
+
+    public async Task<ServiceResult> UpdateUserNotifSettingsAsync(
+        UpdateUserNotifSettingsRequest req, User user, CancellationToken ct = default)
+    {
+        await notifications.UpsertUserNotifSettingsAsync(new UserNotifSettings
+        {
+            UserId = user.Id,
+            TaskReminderHour = req.TaskReminderHour,
+            MediumTermDaysAhead = req.MediumTermDaysAhead,
+            MealPlannerNotifs = req.MealPlannerNotifs,
+            ShortTermTaskNotifs = req.ShortTermTaskNotifs,
+            MediumTermTaskNotifs = req.MediumTermTaskNotifs,
+            LongTermTaskNotifs = req.LongTermTaskNotifs,
+            TaskCompletedNotifs = req.TaskCompletedNotifs,
+        }, ct);
+
+        return ServiceResult.Ok();
+    }
 }

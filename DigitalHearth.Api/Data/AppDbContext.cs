@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<NotifPreference> NotifPreferences => Set<NotifPreference>();
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+    public DbSet<UserNotifSettings> UserNotifSettings => Set<UserNotifSettings>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -62,6 +63,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(n => n.RecurringTaskId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // UserNotifSettings: one-to-one with User
+        b.Entity<UserNotifSettings>()
+            .HasIndex(s => s.UserId).IsUnique();
 
         // WeeklyMeal
         b.Entity<WeeklyMeal>()
