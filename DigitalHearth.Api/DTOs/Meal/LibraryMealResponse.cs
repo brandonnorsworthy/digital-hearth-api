@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Meal;
 
-public record LibraryMealResponse(int Id, string Name, string CreatedBy, DateTime CreatedAt, string[] Tags, string? ImageData);
+public record LibraryMealResponse(int Id, string Name, string CreatedBy, DateTime CreatedAt, string[] Tags, bool HasImage);

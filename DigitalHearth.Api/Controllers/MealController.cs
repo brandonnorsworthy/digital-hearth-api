@@ -20,6 +20,23 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return Ok(new { imageData });
     }
 
+    [HttpGet("api/meals/library/{id:int}/image")]
+    public async Task<IActionResult> GetLibraryMealImage(int id, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+
+        var meal = await mealService.GetLibraryImageAsync(id, user!, ct);
+        if (meal is null) return NotFound();
+
+        // Strip the data URI prefix ("data:image/png;base64,") and decode
+        var base64 = meal.Contains(',') ? meal[(meal.IndexOf(',') + 1)..] : meal;
+        var bytes = Convert.FromBase64String(base64);
+
+        Response.Headers.CacheControl = "public, max-age=31536000";
+        return File(bytes, "image/png");
+    }
+
     [HttpGet("api/households/{householdId:int}/meals/weekly")]
     public async Task<IActionResult> GetWeekly(int householdId, [FromQuery] string? weekOf, CancellationToken ct)
     {

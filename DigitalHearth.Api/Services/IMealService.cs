@@ -12,4 +12,5 @@ public interface IMealService
     Task<ServiceResult<IReadOnlyList<LibraryMealResponse>>> GetLibraryAsync(int householdId, User user, CancellationToken ct = default);
     Task<ServiceResult<LibraryMealResponse>> AddToLibraryAsync(int householdId, AddLibraryMealRequest req, User user, CancellationToken ct = default);
     Task<ServiceResult> DeleteFromLibraryAsync(int id, User user, CancellationToken ct = default);
+    Task<string?> GetLibraryImageAsync(int id, User user, CancellationToken ct = default);
 }

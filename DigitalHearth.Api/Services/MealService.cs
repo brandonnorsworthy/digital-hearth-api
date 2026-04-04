@@ -8,10 +8,10 @@ namespace DigitalHearth.Api.Services;
 public class MealService(IMealRepository meals, IHouseholdRepository households, IServiceScopeFactory scopeFactory) : IMealService
 {
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
-        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageData);
+        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.ImageData is not null);
 
     private static LibraryMealResponse ToLibraryResponse(MealLibrary m) =>
-        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.ImageData);
+        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.ImageData is not null);
 
     private static DateOnly CurrentWeekStart(int weekResetDay)
     {
@@ -148,6 +148,13 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
         }, CancellationToken.None);
 
         return ServiceResult<LibraryMealResponse>.Ok(ToLibraryResponse(meal));
+    }
+
+    public async Task<string?> GetLibraryImageAsync(int id, User user, CancellationToken ct = default)
+    {
+        var meal = await meals.GetLibraryByIdAsync(id, ct);
+        if (meal is null || meal.HouseholdId != user.HouseholdId) return null;
+        return meal.ImageData;
     }
 
     public async Task<ServiceResult> DeleteFromLibraryAsync(int id, User user, CancellationToken ct = default)
