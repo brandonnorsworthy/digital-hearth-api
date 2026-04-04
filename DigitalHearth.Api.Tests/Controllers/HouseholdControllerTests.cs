@@ -15,7 +15,7 @@ public class HouseholdControllerTests
     private readonly Mock<IHouseholdService> _householdService = new();
     private readonly HouseholdController _sut;
 
-    private static readonly HouseholdResponse FakeHousehold = new(10, "Test House", "ABC123", "Monday");
+    private static readonly HouseholdResponse FakeHousehold = new(10, "Test House", "ABC123", "Monday", null);
     private static readonly MeResponse FakeMe = new(1, "alice", 10);
     private static readonly HouseholdWithUserResponse FakeCreated = new(FakeMe, FakeHousehold);
 
@@ -165,7 +165,7 @@ public class HouseholdControllerTests
             .Setup(s => s.UpdateAsync(10, It.IsAny<UpdateHouseholdRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<HouseholdResponse>.Ok(FakeHousehold));
 
-        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null), default);
+        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null, null), default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -175,7 +175,7 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null), default);
+        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null, null), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -188,7 +188,7 @@ public class HouseholdControllerTests
             .Setup(s => s.UpdateAsync(10, It.IsAny<UpdateHouseholdRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<HouseholdResponse>.Forbidden());
 
-        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null), default);
+        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null, null), default);
 
         result.Should().BeOfType<ForbidResult>();
     }

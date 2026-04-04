@@ -3,10 +3,9 @@ using OpenAI.Images;
 
 namespace DigitalHearth.Api.Services;
 
-public class ImageGenerationService(IConfiguration config, IHttpClientFactory httpClientFactory, ILogger<ImageGenerationService> logger) : IImageGenerationService
+public class ImageGenerationService(IConfiguration config, ILogger<ImageGenerationService> logger) : IImageGenerationService
 {
-    private const string PromptSystemMessage =
-        "You are a professional food photographer and stylist. " +
+    private const string PromptSystemMessage = "You are a professional food photographer and stylist. " +
         "Given a dish name, write a single detailed image generation prompt for a photorealistic food photograph. " +
         "Describe the plating, garnishes, textures, lighting, background, and atmosphere in vivid detail. " +
         "There should only be one dish in the image which is the main dish subject given to you. " +
@@ -23,7 +22,23 @@ public class ImageGenerationService(IConfiguration config, IHttpClientFactory ht
 
         try
         {
-            // Stage 1: generate a rich photography prompt via GPT
+            var bytes = await GenerateImageBytesAsync(apiKey, mealName, ct);
+            if (bytes is null) return null;
+            return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Image generation failed for meal '{MealName}'", mealName);
+            return null;
+        }
+    }
+
+    private async Task<byte[]?> GenerateImageBytesAsync(string apiKey, string mealName, CancellationToken ct)
+    {
+        // Stage 1: generate a rich photography prompt via GPT
+        string imagePrompt;
+        try
+        {
             var chatClient = new ChatClient("gpt-4o-mini", apiKey);
             var chatResult = await chatClient.CompleteChatAsync(
             [
@@ -31,28 +46,32 @@ public class ImageGenerationService(IConfiguration config, IHttpClientFactory ht
                 new UserChatMessage(mealName)
             ], cancellationToken: ct);
 
-            var imagePrompt = chatResult.Value.Content[0].Text;
+            imagePrompt = chatResult.Value.Content[0].Text;
             logger.LogInformation("Image prompt for '{MealName}': {Prompt}", mealName, imagePrompt);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Stage 1 (prompt generation) failed for meal '{MealName}'", mealName);
+            throw;
+        }
 
-            // Stage 2: pass the generated prompt to the image model
-            var imageClient = new ImageClient("dall-e-3", apiKey);
+        // Stage 2: generate the image — gpt-image-1 returns bytes directly, no download needed
+        try
+        {
+            var imageClient = new ImageClient("gpt-image-1.5", apiKey);
             var imageResult = await imageClient.GenerateImageAsync(imagePrompt, new ImageGenerationOptions
             {
                 Size = GeneratedImageSize.W1024xH1024
             }, ct);
 
-            var openAiUrl = imageResult.Value.ImageUri;
-            if (openAiUrl is null) return null;
-
-            // Stage 3: download and store as base64 — OpenAI URLs expire after ~1 hour
-            var http = httpClientFactory.CreateClient();
-            var bytes = await http.GetByteArrayAsync(openAiUrl, ct);
-            return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+            var bytes = imageResult.Value.ImageBytes?.ToArray();
+            logger.LogInformation("Image generated for '{MealName}' ({Bytes} bytes)", mealName, bytes?.Length ?? 0);
+            return bytes;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Image generation failed for meal '{MealName}'", mealName);
-            return null;
+            logger.LogError(ex, "Stage 2 (image generation) failed for meal '{MealName}'", mealName);
+            throw;
         }
     }
 }

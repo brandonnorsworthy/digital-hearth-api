@@ -25,7 +25,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         };
 
     private static HouseholdResponse ToResponse(Household h) =>
-        new(h.Id, h.Name, h.JoinCode, DayIntToName(h.WeekResetDay));
+        new(h.Id, h.Name, h.JoinCode, DayIntToName(h.WeekResetDay), h.GoalMealsPerWeek);
 
     public async Task<ServiceResult<HouseholdWithUserResponse>> CreateAsync(CreateHouseholdRequest req, CancellationToken ct = default)
     {
@@ -135,6 +135,8 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
                 return ServiceResult<HouseholdResponse>.BadRequest("WeekResetDay must be a valid day name (e.g. Monday)");
             household.WeekResetDay = day;
         }
+        if (req.GoalMealsPerWeek is not null)
+            household.GoalMealsPerWeek = req.GoalMealsPerWeek;
 
         await households.SaveAsync(ct);
         return ServiceResult<HouseholdResponse>.Ok(ToResponse(household));

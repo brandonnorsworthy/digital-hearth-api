@@ -6,6 +6,7 @@ public class Household
     public string Name { get; set; } = null!;
     public string JoinCode { get; set; } = null!;
     public int WeekResetDay { get; set; } = 1; // 0=Sun … 6=Sat, default Monday
+    public int? GoalMealsPerWeek { get; set; }
 
     public ICollection<User> Members { get; set; } = [];
     public ICollection<RecurringTask> Tasks { get; set; } = [];
