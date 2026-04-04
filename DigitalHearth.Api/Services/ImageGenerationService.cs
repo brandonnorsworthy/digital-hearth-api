@@ -58,7 +58,7 @@ public class ImageGenerationService(IConfiguration config, ILogger<ImageGenerati
         // Stage 2: generate the image — gpt-image-1 returns bytes directly, no download needed
         try
         {
-            var imageClient = new ImageClient("gpt-image-1", apiKey);
+            var imageClient = new ImageClient("gpt-image-1.5", apiKey);
             var imageResult = await imageClient.GenerateImageAsync(imagePrompt, new ImageGenerationOptions
             {
                 Size = GeneratedImageSize.W1024xH1024
