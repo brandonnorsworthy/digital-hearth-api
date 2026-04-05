@@ -115,7 +115,7 @@ public class AuthServiceTests
     [Theory]
     [InlineData("short")]
     [InlineData("nouppercase1!extra")]
-    [InlineData("NOLOWERCASE1!extra")]
+    [InlineData("NOLOWERCASE1!EXTRA")]
     [InlineData("NoNumbers!extrabits")]
     [InlineData("NoSpecialChar1extra")]
     [InlineData("")]
