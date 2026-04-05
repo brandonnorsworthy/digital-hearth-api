@@ -14,5 +14,5 @@ public interface IMealService
     Task<ServiceResult> DeleteFromLibraryAsync(int id, User user, CancellationToken ct = default);
     Task<string?> GetLibraryImageAsync(int id, User user, CancellationToken ct = default);
     Task<ServiceResult> ToggleFavoriteAsync(int mealLibraryId, bool favorite, User user, CancellationToken ct = default);
-    Task<ServiceResult> RegenerateImageAsync(int mealId, User user, CancellationToken ct = default);
+    Task<ServiceResult<string>> RegenerateImageAsync(int mealId, User user, CancellationToken ct = default);
 }

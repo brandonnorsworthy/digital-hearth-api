@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
     public DbSet<UserNotifSettings> UserNotifSettings => Set<UserNotifSettings>();
     public DbSet<MealFavorite> MealFavorites => Set<MealFavorite>();
+    public DbSet<Image> Images => Set<Image>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -78,6 +79,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(f => f.MealLibraryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Image: one-to-one with MealLibrary, cascade delete
+        b.Entity<Image>()
+            .HasOne(i => i.MealLibrary)
+            .WithOne(l => l.Image)
+            .HasForeignKey<Image>(i => i.MealLibraryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<Image>()
+            .HasIndex(i => i.MealLibraryId).IsUnique();
 
         // WeeklyMeal
         b.Entity<WeeklyMeal>()

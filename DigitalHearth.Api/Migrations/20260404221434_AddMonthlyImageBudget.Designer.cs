@@ -3,6 +3,7 @@ using System;
 using DigitalHearth.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DigitalHearth.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404221434_AddMonthlyImageBudget")]
+    partial class AddMonthlyImageBudget
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,45 +64,6 @@ namespace DigitalHearth.Api.Migrations
                     b.ToTable("Households");
                 });
 
-            modelBuilder.Entity("DigitalHearth.Api.Models.Image", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ImageData")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ImageGuid")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ImageToken")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsAiGenerated")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("MealLibraryId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MealLibraryId")
-                        .IsUnique();
-
-                    b.ToTable("Images");
-                });
-
             modelBuilder.Entity("DigitalHearth.Api.Models.MealFavorite", b =>
                 {
                     b.Property<int>("Id")
@@ -140,6 +104,9 @@ namespace DigitalHearth.Api.Migrations
 
                     b.Property<int>("HouseholdId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ImageData")
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -414,17 +381,6 @@ namespace DigitalHearth.Api.Migrations
                     b.ToTable("WeeklyMeals");
                 });
 
-            modelBuilder.Entity("DigitalHearth.Api.Models.Image", b =>
-                {
-                    b.HasOne("DigitalHearth.Api.Models.MealLibrary", "MealLibrary")
-                        .WithOne("Image")
-                        .HasForeignKey("DigitalHearth.Api.Models.Image", "MealLibraryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("MealLibrary");
-                });
-
             modelBuilder.Entity("DigitalHearth.Api.Models.MealFavorite", b =>
                 {
                     b.HasOne("DigitalHearth.Api.Models.MealLibrary", "MealLibrary")
@@ -602,8 +558,6 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.MealLibrary", b =>
                 {
-                    b.Navigation("Image");
-
                     b.Navigation("WeeklyMeals");
                 });
 

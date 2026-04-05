@@ -15,8 +15,8 @@ public class MealControllerTests
     private readonly Mock<IImageGenerationService> _imageGen = new();
     private readonly MealController _sut;
 
-    private static readonly WeeklyMealResponse FakeWeekly = new(1, "2025-01-06", "Pasta", null, false, false);
-    private static readonly LibraryMealResponse FakeLibrary = new(1, "Pasta", "alice", DateTime.UtcNow, [], false, false);
+    private static readonly WeeklyMealResponse FakeWeekly = new(1, "2025-01-06", "Pasta", null, false, false, null);
+    private static readonly LibraryMealResponse FakeLibrary = new(1, "Pasta", "alice", DateTime.UtcNow, [], false, false, null);
 
     public MealControllerTests()
     {
@@ -363,15 +363,15 @@ public class MealControllerTests
     // --- RegenerateImage ---
 
     [Fact]
-    public async Task RegenerateImage_Authenticated_ServiceReturnsOk_Returns204()
+    public async Task RegenerateImage_Authenticated_ServiceReturnsOk_Returns200WithToken()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
-            .ReturnsAsync(ServiceResult.Ok());
+            .ReturnsAsync(ServiceResult<string>.Ok("abc123token"));
 
         var result = await _sut.RegenerateImage(1, default);
 
-        result.Should().BeOfType<NoContentResult>();
+        result.Should().BeOfType<OkObjectResult>();
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
-            .ReturnsAsync(ServiceResult.NotFound("Library meal not found"));
+            .ReturnsAsync(ServiceResult<string>.NotFound("Library meal not found"));
 
         var result = await _sut.RegenerateImage(1, default);
 
@@ -401,7 +401,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
-            .ReturnsAsync(ServiceResult.BadRequest("Image generation failed or is not configured"));
+            .ReturnsAsync(ServiceResult<string>.BadRequest("Image generation failed or is not configured"));
 
         var result = await _sut.RegenerateImage(1, default);
 

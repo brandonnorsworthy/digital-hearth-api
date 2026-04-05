@@ -10,7 +10,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
     {
         return await db.WeeklyMeals
             .Where(m => m.HouseholdId == householdId && m.WeekOf == weekOf)
-            .Include(m => m.MealLibrary)
+            .Include(m => m.MealLibrary).ThenInclude(l => l!.Image)
             .ToListAsync(ct);
     }
 
@@ -24,7 +24,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
     public async Task<WeeklyMeal?> GetWeeklyByIdAsync(int id, CancellationToken ct)
     {
         return await db.WeeklyMeals
-            .Include(m => m.MealLibrary)
+            .Include(m => m.MealLibrary).ThenInclude(l => l!.Image)
             .FirstOrDefaultAsync(m => m.Id == id, ct);
     }
 
@@ -39,6 +39,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         return await db.MealLibrary
             .Where(m => m.HouseholdId == householdId)
             .Include(m => m.CreatedByUser)
+            .Include(m => m.Image)
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync(ct);
     }
@@ -52,7 +53,9 @@ public class MealRepository(AppDbContext db) : IMealRepository
 
     public async Task<MealLibrary?> GetLibraryByIdAsync(int id, CancellationToken ct)
     {
-        return await db.MealLibrary.FindAsync([id], ct);
+        return await db.MealLibrary
+            .Include(m => m.Image)
+            .FirstOrDefaultAsync(m => m.Id == id, ct);
     }
 
     public async Task DeleteFromLibraryAsync(MealLibrary meal, CancellationToken ct)

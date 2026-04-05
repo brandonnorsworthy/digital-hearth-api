@@ -27,14 +27,17 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
 
     public async Task DeleteSubscriptionAsync(PushSubscription sub, CancellationToken ct)
     {
-        db.PushSubscriptions.Remove(sub);
-        await db.SaveChangesAsync(ct);
+        await db.PushSubscriptions
+            .Where(s => s.Id == sub.Id)
+            .ExecuteDeleteAsync(ct);
     }
 
     public async Task DeleteSubscriptionsAsync(List<PushSubscription> subs, CancellationToken ct)
     {
-        db.PushSubscriptions.RemoveRange(subs);
-        await db.SaveChangesAsync(ct);
+        var ids = subs.Select(s => s.Id).ToList();
+        await db.PushSubscriptions
+            .Where(s => ids.Contains(s.Id))
+            .ExecuteDeleteAsync(ct);
     }
 
     public async Task<List<int>> GetOptedOutTaskIdsAsync(int userId, CancellationToken ct)

@@ -260,7 +260,7 @@ public class HouseholdServiceTests
         _households.Setup(r => r.GetByIdAsync(10, default)).ReturnsAsync(household);
         var user = UserFixtures.Admin(householdId: 10);
 
-        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null), user);
+        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null, null), user);
 
         result.Status.Should().Be(ServiceResultStatus.Ok);
         result.Value!.Name.Should().Be("New Name");
@@ -271,7 +271,7 @@ public class HouseholdServiceTests
     {
         var user = UserFixtures.Member(householdId: 10);
 
-        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null), user);
+        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null, null), user);
 
         result.Status.Should().Be(ServiceResultStatus.Forbidden);
     }
@@ -281,7 +281,7 @@ public class HouseholdServiceTests
     {
         var user = UserFixtures.Admin(householdId: 99);
 
-        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null), user);
+        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null, null), user);
 
         result.Status.Should().Be(ServiceResultStatus.Forbidden);
     }
@@ -293,7 +293,7 @@ public class HouseholdServiceTests
         _households.Setup(r => r.GetByIdAsync(10, default)).ReturnsAsync(household);
         var user = UserFixtures.Admin(householdId: 10);
 
-        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest(null, "Caturday", null), user);
+        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest(null, "Caturday", null, null), user);
 
         result.Status.Should().Be(ServiceResultStatus.BadRequest);
     }
@@ -304,7 +304,7 @@ public class HouseholdServiceTests
         _households.Setup(r => r.GetByIdAsync(10, default)).ReturnsAsync((Household?)null);
         var user = UserFixtures.Admin(householdId: 10);
 
-        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null), user);
+        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest("New Name", null, null, null), user);
 
         result.Status.Should().Be(ServiceResultStatus.NotFound);
     }
@@ -316,7 +316,7 @@ public class HouseholdServiceTests
         _households.Setup(r => r.GetByIdAsync(10, default)).ReturnsAsync(household);
         var user = UserFixtures.Admin(householdId: 10);
 
-        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest(null, "Friday", null), user);
+        var result = await _sut.UpdateAsync(10, new UpdateHouseholdRequest(null, "Friday", null, null), user);
 
         result.Value!.Name.Should().Be("Original");
         result.Value.WeekResetDay.Should().Be("Friday");

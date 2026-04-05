@@ -24,8 +24,12 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
             4 => "Thursday", 5 => "Friday", 6 => "Saturday", _ => "Monday"
         };
 
+    private static int CurrentYyyyMm() =>
+        DateTime.UtcNow.Year * 100 + DateTime.UtcNow.Month;
+
     private static HouseholdResponse ToResponse(Household h) =>
-        new(h.Id, h.Name, h.JoinCode, DayIntToName(h.WeekResetDay), h.GoalMealsPerWeek);
+        new(h.Id, h.Name, h.JoinCode, DayIntToName(h.WeekResetDay), h.GoalMealsPerWeek, h.MonthlyImageBudget,
+            h.ImageGenMonth == CurrentYyyyMm() ? h.ImageGenCount : 0);
 
     public async Task<ServiceResult<HouseholdWithUserResponse>> CreateAsync(CreateHouseholdRequest req, CancellationToken ct = default)
     {
@@ -137,6 +141,8 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         }
         if (req.GoalMealsPerWeek is not null)
             household.GoalMealsPerWeek = req.GoalMealsPerWeek;
+        if (req.MonthlyImageBudget is not null)
+            household.MonthlyImageBudget = req.MonthlyImageBudget == 0 ? null : req.MonthlyImageBudget;
 
         await households.SaveAsync(ct);
         return ServiceResult<HouseholdResponse>.Ok(ToResponse(household));
