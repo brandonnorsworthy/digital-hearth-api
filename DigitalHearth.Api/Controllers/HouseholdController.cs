@@ -35,6 +35,14 @@ public class HouseholdController(ICurrentUserService currentUser, IHouseholdServ
         return ToActionResult(await householdService.GetMembersAsync(id, user!, ct));
     }
 
+    [HttpPost("{id:guid}/regenerate-join-code")]
+    public async Task<IActionResult> RegenerateJoinCode(Guid id, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await householdService.RegenerateJoinCodeAsync(id, user!, ct));
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateHouseholdRequest req, CancellationToken ct)
     {

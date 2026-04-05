@@ -15,7 +15,7 @@ public class HouseholdControllerTests
     private readonly Mock<IHouseholdService> _householdService = new();
     private readonly HouseholdController _sut;
 
-    private static readonly HouseholdResponse FakeHousehold = new(UserFixtures.DefaultHouseholdId, "Test House", "ABC123", "Monday", null, null, 0);
+    private static readonly HouseholdResponse FakeHousehold = new(UserFixtures.DefaultHouseholdId, "Test House", "ABC123", DateTime.UtcNow.AddHours(24), "Monday", null, null, 0);
     private static readonly MeResponse FakeMe = new(UserFixtures.DefaultId, "alice", UserFixtures.DefaultHouseholdId);
     private static readonly HouseholdWithUserResponse FakeCreated = new(FakeMe, FakeHousehold);
 

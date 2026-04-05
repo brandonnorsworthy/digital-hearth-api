@@ -34,8 +34,10 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         password.Any(char.IsDigit) &&
         password.Any(c => !char.IsLetterOrDigit(c));
 
+    private static readonly TimeSpan JoinCodeTtl = TimeSpan.FromHours(24);
+
     private static HouseholdResponse ToResponse(Household h) =>
-        new(h.Id, h.Name, h.JoinCode, DayIntToName(h.WeekResetDay), h.GoalMealsPerWeek, h.MonthlyImageBudget,
+        new(h.Id, h.Name, h.JoinCode, h.JoinCodeCreatedAt.Add(JoinCodeTtl), DayIntToName(h.WeekResetDay), h.GoalMealsPerWeek, h.MonthlyImageBudget,
             h.ImageGenMonth == CurrentYyyyMm() ? h.ImageGenCount : 0);
 
     public async Task<ServiceResult<HouseholdWithUserResponse>> CreateAsync(CreateHouseholdRequest req, CancellationToken ct = default)
@@ -59,6 +61,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         {
             Name = req.HouseholdName,
             JoinCode = joinCode,
+            JoinCodeCreatedAt = DateTime.UtcNow,
             WeekResetDay = weekResetDay
         };
         await households.CreateAsync(household, ct);
@@ -85,6 +88,9 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
 
         if (household is null)
             return ServiceResult<HouseholdWithUserResponse>.NotFound("Join code not found");
+
+        if (DateTime.UtcNow - household.JoinCodeCreatedAt > JoinCodeTtl)
+            return ServiceResult<HouseholdWithUserResponse>.BadRequest("Join code has expired. Ask a household admin to regenerate it.");
 
         if (!IsValidPassword(req.Password))
             return ServiceResult<HouseholdWithUserResponse>.BadRequest("Password must be at least 10 characters and include uppercase, lowercase, a number, and a special character");
@@ -128,6 +134,25 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         var members = await users.GetMembersByHouseholdAsync(id, ct);
 
         return ServiceResult<IReadOnlyList<MemberResponse>>.Ok(members);
+    }
+
+    public async Task<ServiceResult<HouseholdResponse>> RegenerateJoinCodeAsync(Guid id, User user, CancellationToken ct = default)
+    {
+        if (user.HouseholdId != id)
+            return ServiceResult<HouseholdResponse>.Forbidden();
+
+        if (user.Role != "admin")
+            return ServiceResult<HouseholdResponse>.Forbidden();
+
+        var household = await households.GetByIdAsync(id, ct);
+        if (household is null)
+            return ServiceResult<HouseholdResponse>.NotFound("Household not found");
+
+        household.JoinCode = await joinCodeService.GenerateUniqueCodeAsync(households, ct);
+        household.JoinCodeCreatedAt = DateTime.UtcNow;
+        await households.SaveAsync(ct);
+
+        return ServiceResult<HouseholdResponse>.Ok(ToResponse(household));
     }
 
     public async Task<ServiceResult<HouseholdResponse>> UpdateAsync(Guid id, UpdateHouseholdRequest req, User user, CancellationToken ct = default)

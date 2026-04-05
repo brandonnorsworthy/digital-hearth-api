@@ -5,6 +5,7 @@ public class Household
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
     public string JoinCode { get; set; } = null!;
+    public DateTime JoinCodeCreatedAt { get; set; } = DateTime.UtcNow;
     public int WeekResetDay { get; set; } = 1; // 0=Sun … 6=Sat, default Monday
     public int? GoalMealsPerWeek { get; set; }
     public int? MonthlyImageBudget { get; set; } = 0; // max AI image generations per month, null = unlimited, 0 = disabled
