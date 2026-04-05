@@ -7,6 +7,8 @@ namespace DigitalHearth.Api.BackgroundServices;
 public class TaskDueCheckerService(IServiceScopeFactory scopeFactory, ILogger<TaskDueCheckerService> logger)
     : BackgroundService
 {
+    private DateTime _lastCleanup = DateTime.MinValue;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
@@ -50,8 +52,19 @@ public class TaskDueCheckerService(IServiceScopeFactory scopeFactory, ILogger<Ta
                                 Status = success ? NotificationStatus.Sent : NotificationStatus.Failed,
                                 ErrorMessage = success ? null : "Send failed — see application logs for details"
                             }, stoppingToken);
+
+                            if (success)
+                                await notifRepo.UpdateLastSuccessfulPushAsync(sub.Id, now, stoppingToken);
                         }
                     }
+                }
+
+                if (now - _lastCleanup >= TimeSpan.FromDays(1))
+                {
+                    var cutoff = now.AddMonths(-1);
+                    await notifRepo.DeleteStaleSubscriptionsAsync(cutoff, stoppingToken);
+                    _lastCleanup = now;
+                    logger.LogInformation("Pruned stale push subscriptions older than {Cutoff:O}", cutoff);
                 }
             }
             catch (Exception ex)

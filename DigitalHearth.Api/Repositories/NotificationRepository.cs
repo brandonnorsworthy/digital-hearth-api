@@ -40,6 +40,21 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
             .ExecuteDeleteAsync(ct);
     }
 
+    public async Task UpdateLastSuccessfulPushAsync(Guid subscriptionId, DateTime sentAt, CancellationToken ct)
+    {
+        await db.PushSubscriptions
+            .Where(s => s.Id == subscriptionId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.LastSuccessfulPushAt, sentAt), ct);
+    }
+
+    public async Task DeleteStaleSubscriptionsAsync(DateTime cutoff, CancellationToken ct)
+    {
+        await db.PushSubscriptions
+            .Where(s => (s.LastSuccessfulPushAt == null && s.CreatedAt < cutoff)
+                     || (s.LastSuccessfulPushAt != null && s.LastSuccessfulPushAt < cutoff))
+            .ExecuteDeleteAsync(ct);
+    }
+
     public async Task<List<Guid>> GetOptedOutTaskIdsAsync(Guid userId, CancellationToken ct)
     {
         return await db.NotifPreferences

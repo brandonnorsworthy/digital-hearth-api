@@ -9,6 +9,8 @@ public interface INotificationRepository
     Task AddSubscriptionAsync(PushSubscription sub, CancellationToken ct);
     Task DeleteSubscriptionAsync(PushSubscription sub, CancellationToken ct);
     Task DeleteSubscriptionsAsync(List<PushSubscription> subs, CancellationToken ct);
+    Task UpdateLastSuccessfulPushAsync(Guid subscriptionId, DateTime sentAt, CancellationToken ct);
+    Task DeleteStaleSubscriptionsAsync(DateTime cutoff, CancellationToken ct);
     Task<List<Guid>> GetOptedOutTaskIdsAsync(Guid userId, CancellationToken ct);
     Task<bool> IsOptedOutAsync(Guid userId, Guid taskId, CancellationToken ct);
     Task AddPreferenceAsync(NotifPreference pref, CancellationToken ct);
