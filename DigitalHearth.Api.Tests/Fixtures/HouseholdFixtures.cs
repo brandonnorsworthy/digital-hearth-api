@@ -9,6 +9,7 @@ public static class HouseholdFixtures
         Id = id,
         Name = name,
         JoinCode = joinCode,
-        WeekResetDay = weekResetDay
+        WeekResetDay = weekResetDay,
+        MonthlyImageBudget = null // null = unlimited
     };
 }

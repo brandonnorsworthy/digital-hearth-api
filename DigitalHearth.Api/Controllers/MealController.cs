@@ -1,11 +1,13 @@
+using DigitalHearth.Api.Data;
 using DigitalHearth.Api.DTOs.Meal;
 using DigitalHearth.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DigitalHearth.Api.Controllers;
 
 [ApiController]
-public class MealController(ICurrentUserService currentUser, IMealService mealService, IImageGenerationService imageGeneration) : ApiControllerBase
+public class MealController(ICurrentUserService currentUser, IMealService mealService, IImageGenerationService imageGeneration, AppDbContext db) : ApiControllerBase
 {
     [HttpPost("api/meals/generate-image")]
     public async Task<IActionResult> GenerateImage([FromBody] GenerateImageRequest req, CancellationToken ct)
@@ -20,20 +22,21 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return Ok(new { imageData });
     }
 
-    [HttpGet("api/meals/library/{id:int}/image")]
-    public async Task<IActionResult> GetLibraryMealImage(int id, CancellationToken ct)
+    [HttpGet("api/meals/library/{id:int}/image/{guid:guid}")]
+    public async Task<IActionResult> GetLibraryMealImage(int id, Guid guid, CancellationToken ct)
     {
-        var (user, error) = await RequireUserAsync(currentUser, ct);
-        if (error is not null) return error;
+        var imageData = await db.Images
+            .Where(i => i.MealLibraryId == id && i.ImageGuid == guid)
+            .Select(i => i.ImageData)
+            .FirstOrDefaultAsync(ct);
 
-        var meal = await mealService.GetLibraryImageAsync(id, user!, ct);
-        if (meal is null) return NotFound();
+        if (imageData is null) return NotFound();
 
         // Strip the data URI prefix ("data:image/png;base64,") and decode
-        var base64 = meal.Contains(',') ? meal[(meal.IndexOf(',') + 1)..] : meal;
+        var base64 = imageData.Contains(',') ? imageData[(imageData.IndexOf(',') + 1)..] : imageData;
         var bytes = Convert.FromBase64String(base64);
 
-        Response.Headers.CacheControl = "public, max-age=31536000";
+        Response.Headers.CacheControl = "public, max-age=31536000, immutable";
         return File(bytes, "image/png");
     }
 

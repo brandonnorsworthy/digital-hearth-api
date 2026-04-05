@@ -15,7 +15,7 @@ public static class MealFixtures
         CreatedByUser = UserFixtures.Member(),
         CreatedAt = BaseTime,
         Tags = [],
-        ImageData = null
+        Image = null
     };
 
     public static WeeklyMeal Weekly(int id = 1, int householdId = 10, string name = "Pasta", int? libraryId = null) => new()

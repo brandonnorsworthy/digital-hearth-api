@@ -8,10 +8,10 @@ namespace DigitalHearth.Api.Services;
 public class MealService(IMealRepository meals, IHouseholdRepository households, IServiceScopeFactory scopeFactory, IImageGenerationService imageGeneration) : IMealService
 {
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
-        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.Image is not null, m.MealLibrary?.Image?.ImageToken);
+        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.Image is not null, m.MealLibrary?.Image?.ImageGuid.ToString("N"));
 
     private static LibraryMealResponse ToLibraryResponse(MealLibrary m, HashSet<int>? favoriteIds = null) =>
-        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.Image is not null, favoriteIds?.Contains(m.Id) ?? false, m.Image?.ImageToken);
+        new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.Image is not null, favoriteIds?.Contains(m.Id) ?? false, m.Image?.ImageGuid.ToString("N"));
 
     private static DateOnly CurrentWeekStart(int weekResetDay)
     {
@@ -153,7 +153,6 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
                         {
                             MealLibraryId = saved.Id,
                             ImageGuid = Guid.NewGuid(),
-                            ImageToken = Guid.NewGuid().ToString("N"),
                             ImageData = imageUrl,
                             IsAiGenerated = true,
                             CreatedAt = now,
@@ -161,7 +160,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
                         };
                     else
                     {
-                        saved.Image.ImageToken = Guid.NewGuid().ToString("N");
+                        saved.Image.ImageGuid = Guid.NewGuid();
                         saved.Image.ImageData = imageUrl;
                         saved.Image.UpdatedAt = now;
                     }
@@ -222,7 +221,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
         if (imageData is null)
             return ServiceResult<string>.BadRequest("Image generation failed or is not configured");
 
-        var token = Guid.NewGuid().ToString("N");
+        var newGuid = Guid.NewGuid();
         var now = DateTime.UtcNow;
         IncrementImageGenCount(household);
 
@@ -230,8 +229,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             meal.Image = new Image
             {
                 MealLibraryId = meal.Id,
-                ImageGuid = Guid.NewGuid(),
-                ImageToken = token,
+                ImageGuid = newGuid,
                 ImageData = imageData,
                 IsAiGenerated = true,
                 CreatedAt = now,
@@ -239,14 +237,14 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             };
         else
         {
-            meal.Image.ImageToken = token;
+            meal.Image.ImageGuid = newGuid;
             meal.Image.ImageData = imageData;
             meal.Image.UpdatedAt = now;
         }
 
         await meals.SaveAsync(ct);
 
-        return ServiceResult<string>.Ok(token);
+        return ServiceResult<string>.Ok(newGuid.ToString("N"));
     }
 
     private static bool CanGenerateImage(Household household)

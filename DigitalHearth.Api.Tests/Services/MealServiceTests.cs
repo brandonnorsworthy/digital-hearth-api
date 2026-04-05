@@ -461,9 +461,9 @@ public class MealServiceTests
     public async Task RegenerateImage_ImageGenFails_ReturnsBadRequest()
     {
         var meal = MealFixtures.LibraryMeal(id: 1, householdId: 10, name: "Pasta");
-        _meals.Setup(r => r.GetLibraryByIdAsync(1, default)).ReturnsAsync(meal);
-        _households.Setup(r => r.GetByIdAsync(10, default)).ReturnsAsync(HouseholdFixtures.Default(id: 10));
-        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", default)).ReturnsAsync((string?)null);
+        _meals.Setup(r => r.GetLibraryByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(meal);
+        _households.Setup(r => r.GetByIdAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(HouseholdFixtures.Default(id: 10));
+        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", It.IsAny<CancellationToken>())).ReturnsAsync((string?)null);
         var user = UserFixtures.InHousehold(10);
 
         var result = await _sut.RegenerateImageAsync(1, user);
@@ -475,17 +475,17 @@ public class MealServiceTests
     public async Task RegenerateImage_Success_SavesImageDataAndReturnsOk()
     {
         var meal = MealFixtures.LibraryMeal(id: 1, householdId: 10, name: "Pasta");
-        _meals.Setup(r => r.GetLibraryByIdAsync(1, default)).ReturnsAsync(meal);
-        _households.Setup(r => r.GetByIdAsync(10, default)).ReturnsAsync(HouseholdFixtures.Default(id: 10));
-        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", default)).ReturnsAsync("data:image/png;base64,abc");
+        _meals.Setup(r => r.GetLibraryByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(meal);
+        _households.Setup(r => r.GetByIdAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(HouseholdFixtures.Default(id: 10));
+        _imageGen.Setup(s => s.GenerateImageAsync("Pasta", It.IsAny<CancellationToken>())).ReturnsAsync("data:image/png;base64,abc");
         var user = UserFixtures.InHousehold(10);
 
         var result = await _sut.RegenerateImageAsync(1, user);
 
         result.Status.Should().Be(ServiceResultStatus.Ok);
         result.Value.Should().NotBeNullOrEmpty();
-        meal.ImageData.Should().Be("data:image/png;base64,abc");
-        meal.ImageToken.Should().NotBeNullOrEmpty();
-        _meals.Verify(r => r.SaveAsync(default), Times.Once);
+        meal.Image!.ImageData.Should().Be("data:image/png;base64,abc");
+        meal.Image.ImageGuid.Should().NotBeEmpty();
+        _meals.Verify(r => r.SaveAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

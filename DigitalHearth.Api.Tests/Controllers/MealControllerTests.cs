@@ -1,9 +1,11 @@
 using DigitalHearth.Api.Controllers;
+using DigitalHearth.Api.Data;
 using DigitalHearth.Api.DTOs.Meal;
 using DigitalHearth.Api.Services;
 using DigitalHearth.Api.Tests.Fixtures;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 
 namespace DigitalHearth.Api.Tests.Controllers;
@@ -20,7 +22,10 @@ public class MealControllerTests
 
     public MealControllerTests()
     {
-        _sut = new MealController(_currentUser.Object, _mealService.Object, _imageGen.Object);
+        var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options);
+        _sut = new MealController(_currentUser.Object, _mealService.Object, _imageGen.Object, db);
         _sut.ControllerContext = new ControllerContext();
     }
 
