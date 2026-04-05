@@ -4,7 +4,7 @@ public class User
 {
     public Guid Id { get; set; }
     public string Username { get; set; } = null!;
-    public string PinHash { get; set; } = null!;
+    public string PasswordHash { get; set; } = null!;
     public string Role { get; set; } = "member";
     public Guid HouseholdId { get; set; }
 

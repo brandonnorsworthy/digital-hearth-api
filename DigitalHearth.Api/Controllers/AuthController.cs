@@ -27,12 +27,12 @@ public class AuthController(ICurrentUserService currentUser, IAuthService authSe
         return Ok(new MeResponse(user!.Id, user.Username, user.HouseholdId));
     }
 
-    [HttpPost("change-pin")]
-    public async Task<IActionResult> ChangePin([FromBody] ChangePinRequest req, CancellationToken ct)
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
 
-        return ToActionResult(await authService.ChangePinAsync(user!.Id, req, ct));
+        return ToActionResult(await authService.ChangePasswordAsync(user!.Id, req, ct));
     }
 }

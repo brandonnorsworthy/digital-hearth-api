@@ -10,6 +10,8 @@ namespace DigitalHearth.Api.Tests.Services;
 
 public class HouseholdServiceTests
 {
+    private const string ValidPassword = "TestPass1!abc";
+
     private readonly Mock<IHouseholdRepository> _households = new();
     private readonly Mock<IUserRepository> _users = new();
     private readonly Mock<ICurrentUserService> _currentUser = new();
@@ -32,7 +34,7 @@ public class HouseholdServiceTests
     [Fact]
     public async Task Create_ValidRequest_ReturnsOkWithHouseholdAndUser()
     {
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", "Monday");
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, "Monday");
 
         var result = await _sut.CreateAsync(req);
 
@@ -44,7 +46,7 @@ public class HouseholdServiceTests
     [Fact]
     public async Task Create_ValidRequest_DefaultsWeekResetDayToMonday()
     {
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", null);
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, null);
 
         var result = await _sut.CreateAsync(req);
 
@@ -55,7 +57,7 @@ public class HouseholdServiceTests
     [Fact]
     public async Task Create_ValidRequest_PreservesUsernameCasing()
     {
-        var req = new CreateHouseholdRequest("Test House", "Alice", "1234", null);
+        var req = new CreateHouseholdRequest("Test House", "Alice", ValidPassword, null);
 
         var result = await _sut.CreateAsync(req);
 
@@ -65,7 +67,7 @@ public class HouseholdServiceTests
     [Fact]
     public async Task Create_ValidRequest_CreatesAdminUser()
     {
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", null);
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, null);
 
         await _sut.CreateAsync(req);
 
@@ -74,20 +76,20 @@ public class HouseholdServiceTests
     }
 
     [Fact]
-    public async Task Create_ValidRequest_HashesPin()
+    public async Task Create_ValidRequest_HashesPassword()
     {
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", null);
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, null);
 
         await _sut.CreateAsync(req);
 
         _users.Verify(r => r.CreateAsync(
-            It.Is<User>(u => u.PinHash != "1234" && BCrypt.Net.BCrypt.Verify("1234", u.PinHash)), default), Times.Once);
+            It.Is<User>(u => u.PasswordHash != ValidPassword && BCrypt.Net.BCrypt.Verify(ValidPassword, u.PasswordHash)), default), Times.Once);
     }
 
     [Fact]
     public async Task Create_ValidRequest_SetsAuthCookie()
     {
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", null);
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, null);
 
         await _sut.CreateAsync(req);
 
@@ -95,13 +97,13 @@ public class HouseholdServiceTests
     }
 
     [Theory]
-    [InlineData("", "alice", "1234")]
-    [InlineData("  ", "alice", "1234")]
-    [InlineData("Test House", "", "1234")]
+    [InlineData("", "alice", ValidPassword)]
+    [InlineData("  ", "alice", ValidPassword)]
+    [InlineData("Test House", "", ValidPassword)]
     [InlineData("Test House", "alice", "")]
-    public async Task Create_MissingRequiredFields_ReturnsBadRequest(string name, string username, string pin)
+    public async Task Create_MissingRequiredFields_ReturnsBadRequest(string name, string username, string password)
     {
-        var req = new CreateHouseholdRequest(name, username, pin, null);
+        var req = new CreateHouseholdRequest(name, username, password, null);
 
         var result = await _sut.CreateAsync(req);
 
@@ -111,7 +113,7 @@ public class HouseholdServiceTests
     [Fact]
     public async Task Create_InvalidWeekResetDay_ReturnsBadRequest()
     {
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", "Caturday");
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, "Caturday");
 
         var result = await _sut.CreateAsync(req);
 
@@ -122,7 +124,7 @@ public class HouseholdServiceTests
     public async Task Create_UsernameTaken_ReturnsConflict()
     {
         _users.Setup(r => r.UsernameExistsAsync("alice", default)).ReturnsAsync(true);
-        var req = new CreateHouseholdRequest("Test House", "alice", "1234", null);
+        var req = new CreateHouseholdRequest("Test House", "alice", ValidPassword, null);
 
         var result = await _sut.CreateAsync(req);
 
@@ -136,7 +138,7 @@ public class HouseholdServiceTests
     {
         var household = HouseholdFixtures.Default();
         _households.Setup(r => r.GetByJoinCodeAsync("ABC123", default)).ReturnsAsync(household);
-        var req = new JoinHouseholdRequest("bob", "5678", "ABC123");
+        var req = new JoinHouseholdRequest("bob", ValidPassword, "ABC123");
 
         var result = await _sut.JoinAsync(req);
 
@@ -149,7 +151,7 @@ public class HouseholdServiceTests
     public async Task Join_ValidCode_CreatesMemberRole()
     {
         _households.Setup(r => r.GetByJoinCodeAsync("ABC123", default)).ReturnsAsync(HouseholdFixtures.Default());
-        var req = new JoinHouseholdRequest("bob", "5678", "ABC123");
+        var req = new JoinHouseholdRequest("bob", ValidPassword, "ABC123");
 
         await _sut.JoinAsync(req);
 
@@ -161,7 +163,7 @@ public class HouseholdServiceTests
     public async Task Join_JoinCodeNotFound_ReturnsNotFound()
     {
         _households.Setup(r => r.GetByJoinCodeAsync(It.IsAny<string>(), default)).ReturnsAsync((Household?)null);
-        var req = new JoinHouseholdRequest("bob", "5678", "NOPE99");
+        var req = new JoinHouseholdRequest("bob", ValidPassword, "NOPE99");
 
         var result = await _sut.JoinAsync(req);
 
@@ -173,7 +175,7 @@ public class HouseholdServiceTests
     {
         _households.Setup(r => r.GetByJoinCodeAsync("ABC123", default)).ReturnsAsync(HouseholdFixtures.Default());
         _users.Setup(r => r.UsernameExistsAsync("bob", default)).ReturnsAsync(true);
-        var req = new JoinHouseholdRequest("bob", "5678", "ABC123");
+        var req = new JoinHouseholdRequest("bob", ValidPassword, "ABC123");
 
         var result = await _sut.JoinAsync(req);
 

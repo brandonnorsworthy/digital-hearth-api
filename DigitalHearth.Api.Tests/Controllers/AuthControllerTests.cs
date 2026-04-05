@@ -86,56 +86,56 @@ public class AuthControllerTests
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 
-    // --- ChangePin ---
+    // --- ChangePassword ---
 
     [Fact]
-    public async Task ChangePin_Authenticated_ServiceReturnsOk_Returns204()
+    public async Task ChangePassword_Authenticated_ServiceReturnsOk_Returns204()
     {
         var user = UserFixtures.Member();
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(user);
         _authService
-            .Setup(s => s.ChangePinAsync(user.Id, It.IsAny<ChangePinRequest>(), default))
+            .Setup(s => s.ChangePasswordAsync(user.Id, It.IsAny<ChangePasswordRequest>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.ChangePin(new ChangePinRequest("1234", "5678"), default);
+        var result = await _sut.ChangePassword(new ChangePasswordRequest("1234", "NewPass1!extra"), default);
 
         result.Should().BeOfType<NoContentResult>();
     }
 
     [Fact]
-    public async Task ChangePin_Authenticated_ServiceReturnsUnauthorized_Returns401()
+    public async Task ChangePassword_Authenticated_ServiceReturnsUnauthorized_Returns401()
     {
         var user = UserFixtures.Member();
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(user);
         _authService
-            .Setup(s => s.ChangePinAsync(user.Id, It.IsAny<ChangePinRequest>(), default))
-            .ReturnsAsync(ServiceResult.Unauthorized("Current PIN is incorrect"));
+            .Setup(s => s.ChangePasswordAsync(user.Id, It.IsAny<ChangePasswordRequest>(), default))
+            .ReturnsAsync(ServiceResult.Unauthorized("Current password is incorrect"));
 
-        var result = await _sut.ChangePin(new ChangePinRequest("wrong", "5678"), default);
+        var result = await _sut.ChangePassword(new ChangePasswordRequest("wrong", "NewPass1!extra"), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 
     [Fact]
-    public async Task ChangePin_Authenticated_ServiceReturnsBadRequest_Returns400()
+    public async Task ChangePassword_Authenticated_ServiceReturnsBadRequest_Returns400()
     {
         var user = UserFixtures.Member();
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(user);
         _authService
-            .Setup(s => s.ChangePinAsync(user.Id, It.IsAny<ChangePinRequest>(), default))
-            .ReturnsAsync(ServiceResult.BadRequest("New PIN must be exactly 4 digits"));
+            .Setup(s => s.ChangePasswordAsync(user.Id, It.IsAny<ChangePasswordRequest>(), default))
+            .ReturnsAsync(ServiceResult.BadRequest("Password must be at least 10 characters and include uppercase, lowercase, a number, and a special character"));
 
-        var result = await _sut.ChangePin(new ChangePinRequest("1234", "abc"), default);
+        var result = await _sut.ChangePassword(new ChangePasswordRequest("1234", "weak"), default);
 
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
-    public async Task ChangePin_NotAuthenticated_Returns401()
+    public async Task ChangePassword_NotAuthenticated_Returns401()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.ChangePin(new ChangePinRequest("1234", "5678"), default);
+        var result = await _sut.ChangePassword(new ChangePasswordRequest("1234", "NewPass1!extra"), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }

@@ -9,7 +9,7 @@ public class AuthService(IUserRepository users, ICurrentUserService currentUser)
     {
         var user = await users.GetByUsernameAsync(req.Username, ct);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(req.Pin, user.PinHash))
+        if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
             return ServiceResult<MeResponse>.Unauthorized("Invalid credentials");
 
         currentUser.SetUserId(user.Id);
@@ -17,21 +17,28 @@ public class AuthService(IUserRepository users, ICurrentUserService currentUser)
         return ServiceResult<MeResponse>.Ok(new MeResponse(user.Id, user.Username, user.HouseholdId));
     }
 
-    public async Task<ServiceResult> ChangePinAsync(Guid userId, ChangePinRequest req, CancellationToken ct = default)
+    public async Task<ServiceResult> ChangePasswordAsync(Guid userId, ChangePasswordRequest req, CancellationToken ct = default)
     {
         var user = await users.GetByIdAsync(userId, ct);
         if (user is null)
             return ServiceResult.Unauthorized("Not authenticated");
 
-        if (!BCrypt.Net.BCrypt.Verify(req.CurrentPin, user.PinHash))
-            return ServiceResult.Unauthorized("Current PIN is incorrect");
+        if (!BCrypt.Net.BCrypt.Verify(req.CurrentPassword, user.PasswordHash))
+            return ServiceResult.Unauthorized("Current password is incorrect");
 
-        if (req.NewPin.Length != 4 || !req.NewPin.All(char.IsDigit))
-            return ServiceResult.BadRequest("New PIN must be exactly 4 digits");
+        if (!IsValidPassword(req.NewPassword))
+            return ServiceResult.BadRequest("Password must be at least 10 characters and include uppercase, lowercase, a number, and a special character");
 
-        var newHash = BCrypt.Net.BCrypt.HashPassword(req.NewPin);
-        await users.UpdatePinHashAsync(userId, newHash, ct);
+        var newHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+        await users.UpdatePasswordHashAsync(userId, newHash, ct);
 
         return ServiceResult.Ok();
     }
+
+    private static bool IsValidPassword(string password) =>
+        password.Length >= 10 &&
+        password.Any(char.IsUpper) &&
+        password.Any(char.IsLower) &&
+        password.Any(char.IsDigit) &&
+        password.Any(c => !char.IsLetterOrDigit(c));
 }

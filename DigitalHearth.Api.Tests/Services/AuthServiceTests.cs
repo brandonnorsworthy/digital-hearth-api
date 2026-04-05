@@ -55,9 +55,9 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task Login_WrongPin_ReturnsUnauthorized()
+    public async Task Login_WrongPassword_ReturnsUnauthorized()
     {
-        var user = UserFixtures.Member(); // PinHash = BCrypt("1234")
+        var user = UserFixtures.Member(); // PasswordHash = BCrypt("1234")
         _users.Setup(r => r.GetByUsernameAsync("alice", default)).ReturnsAsync(user);
 
         var result = await _sut.LoginAsync(new LoginRequest("alice", "wrong"));
@@ -66,7 +66,7 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task Login_WrongPin_DoesNotSetAuthCookie()
+    public async Task Login_WrongPassword_DoesNotSetAuthCookie()
     {
         var user = UserFixtures.Member();
         _users.Setup(r => r.GetByUsernameAsync("alice", default)).ReturnsAsync(user);
@@ -76,55 +76,57 @@ public class AuthServiceTests
         _currentUser.Verify(s => s.SetUserId(It.IsAny<Guid>()), Times.Never);
     }
 
-    // --- ChangePin ---
+    // --- ChangePassword ---
 
     [Fact]
-    public async Task ChangePin_ValidRequest_UpdatesPinHash()
+    public async Task ChangePassword_ValidRequest_UpdatesPasswordHash()
     {
         var user = UserFixtures.Member();
         _users.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
 
-        var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("1234", "5678"));
+        var result = await _sut.ChangePasswordAsync(user.Id, new ChangePasswordRequest("1234", "NewPass1!extra"));
 
         result.IsSuccess.Should().BeTrue();
-        _users.Verify(r => r.UpdatePinHashAsync(user.Id, It.Is<string>(h => BCrypt.Net.BCrypt.Verify("5678", h)), default), Times.Once);
+        _users.Verify(r => r.UpdatePasswordHashAsync(user.Id, It.Is<string>(h => BCrypt.Net.BCrypt.Verify("NewPass1!extra", h)), default), Times.Once);
     }
 
     [Fact]
-    public async Task ChangePin_UserNotFound_ReturnsUnauthorized()
+    public async Task ChangePassword_UserNotFound_ReturnsUnauthorized()
     {
         _users.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.ChangePinAsync(UserFixtures.OutsideHouseholdId, new ChangePinRequest("1234", "5678"));
+        var result = await _sut.ChangePasswordAsync(UserFixtures.OutsideHouseholdId, new ChangePasswordRequest("1234", "NewPass1!extra"));
 
         result.Status.Should().Be(ServiceResultStatus.Unauthorized);
     }
 
     [Fact]
-    public async Task ChangePin_WrongCurrentPin_ReturnsUnauthorized()
+    public async Task ChangePassword_WrongCurrentPassword_ReturnsUnauthorized()
     {
         var user = UserFixtures.Member();
         _users.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
 
-        var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("wrong", "5678"));
+        var result = await _sut.ChangePasswordAsync(user.Id, new ChangePasswordRequest("wrong", "NewPass1!extra"));
 
         result.Status.Should().Be(ServiceResultStatus.Unauthorized);
-        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<Guid>(), It.IsAny<string>(), default), Times.Never);
+        _users.Verify(r => r.UpdatePasswordHashAsync(It.IsAny<Guid>(), It.IsAny<string>(), default), Times.Never);
     }
 
     [Theory]
-    [InlineData("123")]
-    [InlineData("12345")]
-    [InlineData("abcd")]
+    [InlineData("short")]
+    [InlineData("nouppercase1!extra")]
+    [InlineData("NOLOWERCASE1!extra")]
+    [InlineData("NoNumbers!extrabits")]
+    [InlineData("NoSpecialChar1extra")]
     [InlineData("")]
-    public async Task ChangePin_InvalidNewPin_ReturnsBadRequest(string newPin)
+    public async Task ChangePassword_InvalidNewPassword_ReturnsBadRequest(string newPassword)
     {
         var user = UserFixtures.Member();
         _users.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
 
-        var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("1234", newPin));
+        var result = await _sut.ChangePasswordAsync(user.Id, new ChangePasswordRequest("1234", newPassword));
 
         result.Status.Should().Be(ServiceResultStatus.BadRequest);
-        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<Guid>(), It.IsAny<string>(), default), Times.Never);
+        _users.Verify(r => r.UpdatePasswordHashAsync(It.IsAny<Guid>(), It.IsAny<string>(), default), Times.Never);
     }
 }

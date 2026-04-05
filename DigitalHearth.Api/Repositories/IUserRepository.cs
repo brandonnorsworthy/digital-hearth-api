@@ -10,5 +10,5 @@ public interface IUserRepository
     Task<bool> UsernameExistsAsync(string username, CancellationToken ct);
     Task<User> CreateAsync(User user, CancellationToken ct);
     Task<List<MemberResponse>> GetMembersByHouseholdAsync(Guid householdId, CancellationToken ct);
-    Task UpdatePinHashAsync(Guid userId, string pinHash, CancellationToken ct);
+    Task UpdatePasswordHashAsync(Guid userId, string passwordHash, CancellationToken ct);
 }

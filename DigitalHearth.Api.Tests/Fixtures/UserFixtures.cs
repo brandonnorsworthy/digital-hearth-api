@@ -12,7 +12,7 @@ public static class UserFixtures
     {
         Id = id ?? DefaultId,
         Username = username,
-        PinHash = BCrypt.Net.BCrypt.HashPassword("1234"),
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword("1234"),
         Role = "member",
         HouseholdId = householdId ?? DefaultHouseholdId
     };
@@ -21,7 +21,7 @@ public static class UserFixtures
     {
         Id = id ?? DefaultId,
         Username = username,
-        PinHash = BCrypt.Net.BCrypt.HashPassword("1234"),
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword("1234"),
         Role = "admin",
         HouseholdId = householdId ?? DefaultHouseholdId
     };

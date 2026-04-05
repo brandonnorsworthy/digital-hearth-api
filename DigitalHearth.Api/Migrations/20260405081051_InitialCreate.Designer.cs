@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DigitalHearth.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260405062834_InitialCreate")]
+    [Migration("20260405081051_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -301,7 +301,7 @@ namespace DigitalHearth.Api.Migrations
                     b.Property<Guid>("HouseholdId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PinHash")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
 

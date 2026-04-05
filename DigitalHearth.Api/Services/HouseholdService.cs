@@ -27,14 +27,24 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
     private static int CurrentYyyyMm() =>
         DateTime.UtcNow.Year * 100 + DateTime.UtcNow.Month;
 
+    private static bool IsValidPassword(string password) =>
+        password.Length >= 10 &&
+        password.Any(char.IsUpper) &&
+        password.Any(char.IsLower) &&
+        password.Any(char.IsDigit) &&
+        password.Any(c => !char.IsLetterOrDigit(c));
+
     private static HouseholdResponse ToResponse(Household h) =>
         new(h.Id, h.Name, h.JoinCode, DayIntToName(h.WeekResetDay), h.GoalMealsPerWeek, h.MonthlyImageBudget,
             h.ImageGenMonth == CurrentYyyyMm() ? h.ImageGenCount : 0);
 
     public async Task<ServiceResult<HouseholdWithUserResponse>> CreateAsync(CreateHouseholdRequest req, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(req.HouseholdName) || string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Pin))
+        if (string.IsNullOrWhiteSpace(req.HouseholdName) || string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
             return ServiceResult<HouseholdWithUserResponse>.BadRequest("HouseholdName, Username, and Pin are required");
+
+        if (!IsValidPassword(req.Password))
+            return ServiceResult<HouseholdWithUserResponse>.BadRequest("Password must be at least 10 characters and include uppercase, lowercase, a number, and a special character");
 
         var weekResetDay = DayNameToInt(req.WeekResetDay ?? "Monday");
         if (weekResetDay < 0)
@@ -56,7 +66,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         var user = new User
         {
             Username = req.Username,
-            PinHash = BCrypt.Net.BCrypt.HashPassword(req.Pin),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             Role = "admin",
             HouseholdId = household.Id
         };
@@ -76,13 +86,16 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         if (household is null)
             return ServiceResult<HouseholdWithUserResponse>.NotFound("Join code not found");
 
+        if (!IsValidPassword(req.Password))
+            return ServiceResult<HouseholdWithUserResponse>.BadRequest("Password must be at least 10 characters and include uppercase, lowercase, a number, and a special character");
+
         if (await users.UsernameExistsAsync(req.Username, ct))
             return ServiceResult<HouseholdWithUserResponse>.Conflict("Username already taken");
 
         var user = new User
         {
             Username = req.Username,
-            PinHash = BCrypt.Net.BCrypt.HashPassword(req.Pin),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             Role = "member",
             HouseholdId = household.Id
         };
