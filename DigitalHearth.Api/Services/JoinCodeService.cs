@@ -12,7 +12,7 @@ public class JoinCodeService : IJoinCodeService
         string code;
         do
         {
-            code = RandomNumberGenerator.GetString(Chars, 6);
+            code = RandomNumberGenerator.GetString(Chars, 8);
         }
         while (await households.GetByJoinCodeAsync(code, ct) is not null);
 
