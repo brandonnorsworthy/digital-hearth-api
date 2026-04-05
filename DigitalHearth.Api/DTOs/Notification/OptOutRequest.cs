@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Notification;
 
-public record OptOutRequest(int TaskId);
+public record OptOutRequest(Guid TaskId);

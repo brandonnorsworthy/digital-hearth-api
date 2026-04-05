@@ -2,8 +2,8 @@ namespace DigitalHearth.Api.Models;
 
 public class Image
 {
-    public int Id { get; set; }
-    public int MealLibraryId { get; set; }
+    public Guid Id { get; set; }
+    public Guid MealLibraryId { get; set; }
     public Guid ImageGuid { get; set; }
     public string ImageData { get; set; } = null!;
     public bool IsAiGenerated { get; set; }

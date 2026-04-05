@@ -4,9 +4,9 @@ namespace DigitalHearth.Api.Services;
 
 public interface ICurrentUserService
 {
-    int? GetUserId();
+    Guid? GetUserId();
     bool IsAuthenticated { get; }
     Task<User?> GetUserAsync(CancellationToken ct = default);
-    void SetUserId(int userId);
+    void SetUserId(Guid userId);
     void Clear();
 }

@@ -4,10 +4,10 @@ public enum NotificationStatus { Sent, Failed }
 
 public class NotificationLog
 {
-    public int Id { get; set; }
-    public int PushSubscriptionId { get; set; }
+    public Guid Id { get; set; }
+    public Guid PushSubscriptionId { get; set; }
     public PushSubscription PushSubscription { get; set; } = null!;
-    public int RecurringTaskId { get; set; }
+    public Guid RecurringTaskId { get; set; }
     public RecurringTask RecurringTask { get; set; } = null!;
     public DateTime DueAt { get; set; }
     public DateTime SentAt { get; set; }

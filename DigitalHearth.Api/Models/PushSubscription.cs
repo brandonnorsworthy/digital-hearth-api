@@ -2,8 +2,8 @@ namespace DigitalHearth.Api.Models;
 
 public class PushSubscription
 {
-    public int Id { get; set; }
-    public int UserId { get; set; }
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public string Endpoint { get; set; } = null!;
     public string P256dh { get; set; } = null!;
     public string Auth { get; set; } = null!;

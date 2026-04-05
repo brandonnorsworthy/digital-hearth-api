@@ -1,8 +1,8 @@
 namespace DigitalHearth.Api.DTOs.Task;
 
 public record TaskResponse(
-    int Id,
-    int HouseholdId,
+    Guid Id,
+    Guid HouseholdId,
     string Name,
     int IntervalDays,
     DateTime? LastCompletedAt,

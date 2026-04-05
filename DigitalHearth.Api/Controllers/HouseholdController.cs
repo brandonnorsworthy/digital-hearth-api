@@ -19,24 +19,24 @@ public class HouseholdController(ICurrentUserService currentUser, IHouseholdServ
     public async Task<IActionResult> Join([FromBody] JoinHouseholdRequest req, CancellationToken ct)
         => ToActionResult(await householdService.JoinAsync(req, ct));
 
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken ct)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await householdService.GetByIdAsync(id, user!, ct));
     }
 
-    [HttpGet("{id:int}/members")]
-    public async Task<IActionResult> GetMembers(int id, CancellationToken ct)
+    [HttpGet("{id:guid}/members")]
+    public async Task<IActionResult> GetMembers(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await householdService.GetMembersAsync(id, user!, ct));
     }
 
-    [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateHouseholdRequest req, CancellationToken ct)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateHouseholdRequest req, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;

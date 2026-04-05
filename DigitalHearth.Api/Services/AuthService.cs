@@ -17,7 +17,7 @@ public class AuthService(IUserRepository users, ICurrentUserService currentUser)
         return ServiceResult<MeResponse>.Ok(new MeResponse(user.Id, user.Username, user.HouseholdId));
     }
 
-    public async Task<ServiceResult> ChangePinAsync(int userId, ChangePinRequest req, CancellationToken ct = default)
+    public async Task<ServiceResult> ChangePinAsync(Guid userId, ChangePinRequest req, CancellationToken ct = default)
     {
         var user = await users.GetByIdAsync(userId, ct);
         if (user is null)

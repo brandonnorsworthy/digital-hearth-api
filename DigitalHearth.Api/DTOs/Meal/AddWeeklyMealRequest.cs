@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Meal;
 
-public record AddWeeklyMealRequest(string WeekOf, int? MealLibraryId, string? Name);
+public record AddWeeklyMealRequest(string WeekOf, Guid? MealLibraryId, string? Name);

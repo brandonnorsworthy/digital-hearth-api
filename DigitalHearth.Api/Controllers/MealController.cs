@@ -22,8 +22,8 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return Ok(new { imageData });
     }
 
-    [HttpGet("api/meals/library/{id:int}/image/{guid:guid}")]
-    public async Task<IActionResult> GetLibraryMealImage(int id, Guid guid, CancellationToken ct)
+    [HttpGet("api/meals/library/{id:guid}/image/{guid:guid}")]
+    public async Task<IActionResult> GetLibraryMealImage(Guid id, Guid guid, CancellationToken ct)
     {
         var imageData = await db.Images
             .Where(i => i.MealLibraryId == id && i.ImageGuid == guid)
@@ -40,16 +40,16 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return File(bytes, "image/png");
     }
 
-    [HttpGet("api/households/{householdId:int}/meals/weekly")]
-    public async Task<IActionResult> GetWeekly(int householdId, [FromQuery] string? weekOf, CancellationToken ct)
+    [HttpGet("api/households/{householdId:guid}/meals/weekly")]
+    public async Task<IActionResult> GetWeekly(Guid householdId, [FromQuery] string? weekOf, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.GetWeeklyAsync(householdId, weekOf, user!, ct));
     }
 
-    [HttpPost("api/households/{householdId:int}/meals/weekly")]
-    public async Task<IActionResult> AddWeekly(int householdId, [FromBody] AddWeeklyMealRequest req, CancellationToken ct)
+    [HttpPost("api/households/{householdId:guid}/meals/weekly")]
+    public async Task<IActionResult> AddWeekly(Guid householdId, [FromBody] AddWeeklyMealRequest req, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
@@ -58,32 +58,32 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return CreatedAtAction(nameof(GetWeekly), new { householdId }, result.Value);
     }
 
-    [HttpPatch("api/meals/weekly/{id:int}")]
-    public async Task<IActionResult> PatchWeekly(int id, [FromBody] PatchWeeklyMealRequest req, CancellationToken ct)
+    [HttpPatch("api/meals/weekly/{id:guid}")]
+    public async Task<IActionResult> PatchWeekly(Guid id, [FromBody] PatchWeeklyMealRequest req, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.LinkToLibraryAsync(id, req, user!, ct));
     }
 
-    [HttpDelete("api/meals/weekly/{id:int}")]
-    public async Task<IActionResult> DeleteWeekly(int id, CancellationToken ct)
+    [HttpDelete("api/meals/weekly/{id:guid}")]
+    public async Task<IActionResult> DeleteWeekly(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.DeleteWeeklyAsync(id, user!, ct));
     }
 
-    [HttpGet("api/households/{householdId:int}/meals/library")]
-    public async Task<IActionResult> GetLibrary(int householdId, CancellationToken ct)
+    [HttpGet("api/households/{householdId:guid}/meals/library")]
+    public async Task<IActionResult> GetLibrary(Guid householdId, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.GetLibraryAsync(householdId, user!, ct));
     }
 
-    [HttpPost("api/households/{householdId:int}/meals/library")]
-    public async Task<IActionResult> AddToLibrary(int householdId, [FromBody] AddLibraryMealRequest req, CancellationToken ct)
+    [HttpPost("api/households/{householdId:guid}/meals/library")]
+    public async Task<IActionResult> AddToLibrary(Guid householdId, [FromBody] AddLibraryMealRequest req, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
@@ -92,32 +92,32 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return CreatedAtAction(nameof(GetLibrary), new { householdId }, result.Value);
     }
 
-    [HttpDelete("api/meals/library/{id:int}")]
-    public async Task<IActionResult> DeleteFromLibrary(int id, CancellationToken ct)
+    [HttpDelete("api/meals/library/{id:guid}")]
+    public async Task<IActionResult> DeleteFromLibrary(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.DeleteFromLibraryAsync(id, user!, ct));
     }
 
-    [HttpPost("api/meals/library/{id:int}/favorite")]
-    public async Task<IActionResult> FavoriteMeal(int id, CancellationToken ct)
+    [HttpPost("api/meals/library/{id:guid}/favorite")]
+    public async Task<IActionResult> FavoriteMeal(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.ToggleFavoriteAsync(id, true, user!, ct));
     }
 
-    [HttpDelete("api/meals/library/{id:int}/favorite")]
-    public async Task<IActionResult> UnfavoriteMeal(int id, CancellationToken ct)
+    [HttpDelete("api/meals/library/{id:guid}/favorite")]
+    public async Task<IActionResult> UnfavoriteMeal(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
         return ToActionResult(await mealService.ToggleFavoriteAsync(id, false, user!, ct));
     }
 
-    [HttpPost("api/meals/library/{id:int}/regenerate-image")]
-    public async Task<IActionResult> RegenerateImage(int id, CancellationToken ct)
+    [HttpPost("api/meals/library/{id:guid}/regenerate-image")]
+    public async Task<IActionResult> RegenerateImage(Guid id, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;

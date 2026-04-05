@@ -16,7 +16,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
         (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays));
 
     public async Task<ServiceResult<IReadOnlyList<TaskResponse>>> ListAsync(
-        int householdId, User user, CancellationToken ct = default)
+        Guid householdId, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<IReadOnlyList<TaskResponse>>.Forbidden();
@@ -32,7 +32,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
     }
 
     public async Task<ServiceResult<TaskResponse>> CreateAsync(
-        int householdId, CreateTaskRequest req, User user, CancellationToken ct = default)
+        Guid householdId, CreateTaskRequest req, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<TaskResponse>.Forbidden();
@@ -54,7 +54,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
     }
 
     public async Task<ServiceResult<TaskResponse>> UpdateAsync(
-        int id, UpdateTaskRequest req, User user, CancellationToken ct = default)
+        Guid id, UpdateTaskRequest req, User user, CancellationToken ct = default)
     {
         var task = await tasks.GetByIdWithUserAsync(id, ct);
 
@@ -75,7 +75,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
         return ServiceResult<TaskResponse>.Ok(ToResponse(task));
     }
 
-    public async Task<ServiceResult> DeleteAsync(int id, User user, CancellationToken ct = default)
+    public async Task<ServiceResult> DeleteAsync(Guid id, User user, CancellationToken ct = default)
     {
         var task = await tasks.GetByIdAsync(id, ct);
         if (task is null)
@@ -87,7 +87,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
         return ServiceResult.Ok();
     }
 
-    public async Task<ServiceResult<TaskResponse>> CompleteAsync(int id, User user, CancellationToken ct = default)
+    public async Task<ServiceResult<TaskResponse>> CompleteAsync(Guid id, User user, CancellationToken ct = default)
     {
         var task = await tasks.GetByIdWithUserAsync(id, ct);
 
@@ -112,7 +112,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
     }
 
     public async Task<ServiceResult<IReadOnlyList<CompletionResponse>>> GetHistoryAsync(
-        int id, User user, CancellationToken ct = default)
+        Guid id, User user, CancellationToken ct = default)
     {
         var task = await tasks.GetByIdAsync(id, ct);
         if (task is null)

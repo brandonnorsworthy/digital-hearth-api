@@ -33,7 +33,7 @@ public class NotificationService(INotificationRepository notifications) : INotif
     }
 
     public async Task<ServiceResult<PreferencesResponse>> GetPreferencesAsync(
-        int householdId, User user, CancellationToken ct = default)
+        Guid householdId, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<PreferencesResponse>.Forbidden();
@@ -59,7 +59,7 @@ public class NotificationService(INotificationRepository notifications) : INotif
         return ServiceResult.Ok();
     }
 
-    public async Task<ServiceResult> RemoveOptOutAsync(int taskId, User user, CancellationToken ct = default)
+    public async Task<ServiceResult> RemoveOptOutAsync(Guid taskId, User user, CancellationToken ct = default)
     {
         var pref = await notifications.GetPreferenceAsync(user.Id, taskId, ct);
 

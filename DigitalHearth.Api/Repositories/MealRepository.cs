@@ -6,7 +6,7 @@ namespace DigitalHearth.Api.Repositories;
 
 public class MealRepository(AppDbContext db) : IMealRepository
 {
-    public async Task<List<WeeklyMeal>> GetWeeklyAsync(int householdId, DateOnly weekOf, CancellationToken ct)
+    public async Task<List<WeeklyMeal>> GetWeeklyAsync(Guid householdId, DateOnly weekOf, CancellationToken ct)
     {
         return await db.WeeklyMeals
             .Where(m => m.HouseholdId == householdId && m.WeekOf == weekOf)
@@ -21,7 +21,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         return meal;
     }
 
-    public async Task<WeeklyMeal?> GetWeeklyByIdAsync(int id, CancellationToken ct)
+    public async Task<WeeklyMeal?> GetWeeklyByIdAsync(Guid id, CancellationToken ct)
     {
         return await db.WeeklyMeals
             .Include(m => m.MealLibrary).ThenInclude(l => l!.Image)
@@ -34,7 +34,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<List<MealLibrary>> GetLibraryAsync(int householdId, CancellationToken ct)
+    public async Task<List<MealLibrary>> GetLibraryAsync(Guid householdId, CancellationToken ct)
     {
         return await db.MealLibrary
             .Where(m => m.HouseholdId == householdId)
@@ -51,7 +51,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         return meal;
     }
 
-    public async Task<MealLibrary?> GetLibraryByIdAsync(int id, CancellationToken ct)
+    public async Task<MealLibrary?> GetLibraryByIdAsync(Guid id, CancellationToken ct)
     {
         return await db.MealLibrary
             .Include(m => m.Image)
@@ -69,7 +69,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<HashSet<int>> GetFavoriteIdsAsync(int userId, int householdId, CancellationToken ct)
+    public async Task<HashSet<Guid>> GetFavoriteIdsAsync(Guid userId, Guid householdId, CancellationToken ct)
     {
         var ids = await db.MealFavorites
             .Where(f => f.UserId == userId && f.MealLibrary.HouseholdId == householdId)
@@ -78,7 +78,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         return [.. ids];
     }
 
-    public async Task FavoriteMealAsync(int userId, int mealLibraryId, CancellationToken ct)
+    public async Task FavoriteMealAsync(Guid userId, Guid mealLibraryId, CancellationToken ct)
     {
         var exists = await db.MealFavorites
             .AnyAsync(f => f.UserId == userId && f.MealLibraryId == mealLibraryId, ct);
@@ -88,7 +88,7 @@ public class MealRepository(AppDbContext db) : IMealRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task UnfavoriteMealAsync(int userId, int mealLibraryId, CancellationToken ct)
+    public async Task UnfavoriteMealAsync(Guid userId, Guid mealLibraryId, CancellationToken ct)
     {
         await db.MealFavorites
             .Where(f => f.UserId == userId && f.MealLibraryId == mealLibraryId)

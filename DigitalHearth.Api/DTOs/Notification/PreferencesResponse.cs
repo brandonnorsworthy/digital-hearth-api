@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Notification;
 
-public record PreferencesResponse(List<int> OptedOutTaskIds);
+public record PreferencesResponse(List<Guid> OptedOutTaskIds);

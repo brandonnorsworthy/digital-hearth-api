@@ -19,7 +19,7 @@ public class PushNotificationService(INotificationRepository notifications, ICon
         return new VapidDetails(subject, publicKey, privateKey);
     }
 
-    public async Task SendToUserAsync(int userId, string title, string body, CancellationToken ct = default)
+    public async Task SendToUserAsync(Guid userId, string title, string body, CancellationToken ct = default)
     {
         var subs = await notifications.GetSubscriptionsByUserAsync(userId, ct);
         foreach (var sub in subs)

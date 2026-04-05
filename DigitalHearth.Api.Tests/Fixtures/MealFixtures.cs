@@ -6,22 +6,24 @@ public static class MealFixtures
 {
     private static readonly DateTime BaseTime = new(2025, 1, 6, 0, 0, 0, DateTimeKind.Utc); // Monday
 
-    public static MealLibrary LibraryMeal(int id = 1, int householdId = 10, string name = "Pasta") => new()
+    public static readonly Guid DefaultMealId = new("00000000-0000-0000-0000-000000000001");
+
+    public static MealLibrary LibraryMeal(Guid? id = null, Guid? householdId = null, string name = "Pasta") => new()
     {
-        Id = id,
-        HouseholdId = householdId,
+        Id = id ?? DefaultMealId,
+        HouseholdId = householdId ?? UserFixtures.DefaultHouseholdId,
         Name = name,
-        CreatedByUserId = 1,
+        CreatedByUserId = UserFixtures.DefaultId,
         CreatedByUser = UserFixtures.Member(),
         CreatedAt = BaseTime,
         Tags = [],
         Image = null
     };
 
-    public static WeeklyMeal Weekly(int id = 1, int householdId = 10, string name = "Pasta", int? libraryId = null) => new()
+    public static WeeklyMeal Weekly(Guid? id = null, Guid? householdId = null, string name = "Pasta", Guid? libraryId = null) => new()
     {
-        Id = id,
-        HouseholdId = householdId,
+        Id = id ?? DefaultMealId,
+        HouseholdId = householdId ?? UserFixtures.DefaultHouseholdId,
         WeekOf = DateOnly.FromDateTime(BaseTime),
         Name = name,
         MealLibraryId = libraryId,

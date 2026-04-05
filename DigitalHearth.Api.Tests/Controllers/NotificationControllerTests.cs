@@ -17,6 +17,8 @@ public class NotificationControllerTests
     private readonly Mock<IConfiguration> _config = new();
     private readonly NotificationController _sut;
 
+    private static readonly Guid TaskId5 = new("00000000-0000-0000-0000-000000000005");
+
     public NotificationControllerTests()
     {
         _sut = new NotificationController(_currentUser.Object, _notificationService.Object, _push.Object, _config.Object);
@@ -104,10 +106,10 @@ public class NotificationControllerTests
     public async Task GetPreferences_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _notificationService.Setup(s => s.GetPreferencesAsync(10, It.IsAny<Models.User>(), default))
+        _notificationService.Setup(s => s.GetPreferencesAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<PreferencesResponse>.Ok(new PreferencesResponse([])));
 
-        var result = await _sut.GetPreferences(10, default);
+        var result = await _sut.GetPreferences(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -117,7 +119,7 @@ public class NotificationControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.GetPreferences(10, default);
+        var result = await _sut.GetPreferences(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -126,10 +128,10 @@ public class NotificationControllerTests
     public async Task GetPreferences_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _notificationService.Setup(s => s.GetPreferencesAsync(10, It.IsAny<Models.User>(), default))
+        _notificationService.Setup(s => s.GetPreferencesAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<PreferencesResponse>.Forbidden());
 
-        var result = await _sut.GetPreferences(10, default);
+        var result = await _sut.GetPreferences(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -143,7 +145,7 @@ public class NotificationControllerTests
         _notificationService.Setup(s => s.OptOutAsync(It.IsAny<OptOutRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.OptOut(new OptOutRequest(5), default);
+        var result = await _sut.OptOut(new OptOutRequest(TaskId5), default);
 
         var status = result.Should().BeOfType<StatusCodeResult>().Subject;
         status.StatusCode.Should().Be(201);
@@ -154,7 +156,7 @@ public class NotificationControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.OptOut(new OptOutRequest(5), default);
+        var result = await _sut.OptOut(new OptOutRequest(TaskId5), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -165,10 +167,10 @@ public class NotificationControllerTests
     public async Task RemoveOptOut_Authenticated_Returns204()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _notificationService.Setup(s => s.RemoveOptOutAsync(5, It.IsAny<Models.User>(), default))
+        _notificationService.Setup(s => s.RemoveOptOutAsync(TaskId5, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.RemoveOptOut(5, default);
+        var result = await _sut.RemoveOptOut(TaskId5, default);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -178,7 +180,7 @@ public class NotificationControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.RemoveOptOut(5, default);
+        var result = await _sut.RemoveOptOut(TaskId5, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }

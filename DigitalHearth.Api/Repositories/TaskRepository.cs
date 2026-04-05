@@ -7,7 +7,7 @@ namespace DigitalHearth.Api.Repositories;
 
 public class TaskRepository(AppDbContext db) : ITaskRepository
 {
-    public async Task<List<RecurringTask>> GetByHouseholdAsync(int householdId, CancellationToken ct)
+    public async Task<List<RecurringTask>> GetByHouseholdAsync(Guid householdId, CancellationToken ct)
     {
         return await db.RecurringTasks
             .Where(t => t.HouseholdId == householdId)
@@ -15,14 +15,14 @@ public class TaskRepository(AppDbContext db) : ITaskRepository
             .ToListAsync(ct);
     }
 
-    public async Task<RecurringTask?> GetByIdWithUserAsync(int id, CancellationToken ct)
+    public async Task<RecurringTask?> GetByIdWithUserAsync(Guid id, CancellationToken ct)
     {
         return await db.RecurringTasks
             .Include(t => t.LastCompletedByUser)
             .FirstOrDefaultAsync(t => t.Id == id, ct);
     }
 
-    public async Task<RecurringTask?> GetByIdAsync(int id, CancellationToken ct)
+    public async Task<RecurringTask?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         return await db.RecurringTasks.FindAsync([id], ct);
     }
@@ -52,7 +52,7 @@ public class TaskRepository(AppDbContext db) : ITaskRepository
         return completion;
     }
 
-    public async Task<List<CompletionResponse>> GetHistoryAsync(int taskId, CancellationToken ct)
+    public async Task<List<CompletionResponse>> GetHistoryAsync(Guid taskId, CancellationToken ct)
     {
         return await db.TaskCompletions
             .Where(c => c.TaskId == taskId)

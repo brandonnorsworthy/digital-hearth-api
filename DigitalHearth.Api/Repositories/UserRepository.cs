@@ -7,7 +7,7 @@ namespace DigitalHearth.Api.Repositories;
 
 public class UserRepository(AppDbContext db) : IUserRepository
 {
-    public async Task<User?> GetByIdAsync(int id, CancellationToken ct)
+    public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         return await db.Users.FindAsync([id], ct);
     }
@@ -19,7 +19,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
 
     public async Task<bool> UsernameExistsAsync(string username, CancellationToken ct)
     {
-        return await db.Users.AnyAsync(u => u.Username == username, ct);
+        return await db.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower(), ct);
     }
 
     public async Task<User> CreateAsync(User user, CancellationToken ct)
@@ -29,14 +29,14 @@ public class UserRepository(AppDbContext db) : IUserRepository
         return user;
     }
 
-    public async Task UpdatePinHashAsync(int userId, string pinHash, CancellationToken ct)
+    public async Task UpdatePinHashAsync(Guid userId, string pinHash, CancellationToken ct)
     {
         await db.Users
             .Where(u => u.Id == userId)
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.PinHash, pinHash), ct);
     }
 
-    public async Task<List<MemberResponse>> GetMembersByHouseholdAsync(int householdId, CancellationToken ct)
+    public async Task<List<MemberResponse>> GetMembersByHouseholdAsync(Guid householdId, CancellationToken ct)
     {
         return await db.Users
             .Where(u => u.HouseholdId == householdId)

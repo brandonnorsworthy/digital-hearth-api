@@ -15,8 +15,8 @@ public class HouseholdControllerTests
     private readonly Mock<IHouseholdService> _householdService = new();
     private readonly HouseholdController _sut;
 
-    private static readonly HouseholdResponse FakeHousehold = new(10, "Test House", "ABC123", "Monday", null, null, 0);
-    private static readonly MeResponse FakeMe = new(1, "alice", 10);
+    private static readonly HouseholdResponse FakeHousehold = new(UserFixtures.DefaultHouseholdId, "Test House", "ABC123", "Monday", null, null, 0);
+    private static readonly MeResponse FakeMe = new(UserFixtures.DefaultId, "alice", UserFixtures.DefaultHouseholdId);
     private static readonly HouseholdWithUserResponse FakeCreated = new(FakeMe, FakeHousehold);
 
     public HouseholdControllerTests()
@@ -99,10 +99,10 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _householdService
-            .Setup(s => s.GetByIdAsync(10, It.IsAny<Models.User>(), default))
+            .Setup(s => s.GetByIdAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<HouseholdResponse>.Ok(FakeHousehold));
 
-        var result = await _sut.GetById(10, default);
+        var result = await _sut.GetById(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -112,7 +112,7 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.GetById(10, default);
+        var result = await _sut.GetById(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -122,10 +122,10 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _householdService
-            .Setup(s => s.GetByIdAsync(10, It.IsAny<Models.User>(), default))
+            .Setup(s => s.GetByIdAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<HouseholdResponse>.Forbidden());
 
-        var result = await _sut.GetById(10, default);
+        var result = await _sut.GetById(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -137,10 +137,10 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _householdService
-            .Setup(s => s.GetMembersAsync(10, It.IsAny<Models.User>(), default))
+            .Setup(s => s.GetMembersAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<MemberResponse>>.Ok([]));
 
-        var result = await _sut.GetMembers(10, default);
+        var result = await _sut.GetMembers(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -150,7 +150,7 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.GetMembers(10, default);
+        var result = await _sut.GetMembers(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -162,10 +162,10 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Admin());
         _householdService
-            .Setup(s => s.UpdateAsync(10, It.IsAny<UpdateHouseholdRequest>(), It.IsAny<Models.User>(), default))
+            .Setup(s => s.UpdateAsync(UserFixtures.DefaultHouseholdId, It.IsAny<UpdateHouseholdRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<HouseholdResponse>.Ok(FakeHousehold));
 
-        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null, null, null), default);
+        var result = await _sut.Update(UserFixtures.DefaultHouseholdId, new UpdateHouseholdRequest("New Name", null, null, null), default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -175,7 +175,7 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null, null, null), default);
+        var result = await _sut.Update(UserFixtures.DefaultHouseholdId, new UpdateHouseholdRequest("New Name", null, null, null), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -185,10 +185,10 @@ public class HouseholdControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
         _householdService
-            .Setup(s => s.UpdateAsync(10, It.IsAny<UpdateHouseholdRequest>(), It.IsAny<Models.User>(), default))
+            .Setup(s => s.UpdateAsync(UserFixtures.DefaultHouseholdId, It.IsAny<UpdateHouseholdRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<HouseholdResponse>.Forbidden());
 
-        var result = await _sut.Update(10, new UpdateHouseholdRequest("New Name", null, null, null), default);
+        var result = await _sut.Update(UserFixtures.DefaultHouseholdId, new UpdateHouseholdRequest("New Name", null, null, null), default);
 
         result.Should().BeOfType<ForbidResult>();
     }

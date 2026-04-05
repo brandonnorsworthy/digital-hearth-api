@@ -40,8 +40,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         if (weekResetDay < 0)
             return ServiceResult<HouseholdWithUserResponse>.BadRequest("WeekResetDay must be a valid day name (e.g. Monday)");
 
-        var normalizedUsername = req.Username.ToLowerInvariant();
-        if (await users.UsernameExistsAsync(normalizedUsername, ct))
+        if (await users.UsernameExistsAsync(req.Username, ct))
             return ServiceResult<HouseholdWithUserResponse>.Conflict("Username already taken");
 
         var joinCode = await joinCodeService.GenerateUniqueCodeAsync(households, ct);
@@ -56,7 +55,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
 
         var user = new User
         {
-            Username = normalizedUsername,
+            Username = req.Username,
             PinHash = BCrypt.Net.BCrypt.HashPassword(req.Pin),
             Role = "admin",
             HouseholdId = household.Id
@@ -77,13 +76,12 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         if (household is null)
             return ServiceResult<HouseholdWithUserResponse>.NotFound("Join code not found");
 
-        var normalizedUsername = req.Username.ToLowerInvariant();
-        if (await users.UsernameExistsAsync(normalizedUsername, ct))
+        if (await users.UsernameExistsAsync(req.Username, ct))
             return ServiceResult<HouseholdWithUserResponse>.Conflict("Username already taken");
 
         var user = new User
         {
-            Username = normalizedUsername,
+            Username = req.Username,
             PinHash = BCrypt.Net.BCrypt.HashPassword(req.Pin),
             Role = "member",
             HouseholdId = household.Id
@@ -97,7 +95,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
             ToResponse(household)));
     }
 
-    public async Task<ServiceResult<HouseholdResponse>> GetByIdAsync(int id, User user, CancellationToken ct = default)
+    public async Task<ServiceResult<HouseholdResponse>> GetByIdAsync(Guid id, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != id)
             return ServiceResult<HouseholdResponse>.Forbidden();
@@ -109,7 +107,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         return ServiceResult<HouseholdResponse>.Ok(ToResponse(household));
     }
 
-    public async Task<ServiceResult<IReadOnlyList<MemberResponse>>> GetMembersAsync(int id, User user, CancellationToken ct = default)
+    public async Task<ServiceResult<IReadOnlyList<MemberResponse>>> GetMembersAsync(Guid id, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != id)
             return ServiceResult<IReadOnlyList<MemberResponse>>.Forbidden();
@@ -119,7 +117,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         return ServiceResult<IReadOnlyList<MemberResponse>>.Ok(members);
     }
 
-    public async Task<ServiceResult<HouseholdResponse>> UpdateAsync(int id, UpdateHouseholdRequest req, User user, CancellationToken ct = default)
+    public async Task<ServiceResult<HouseholdResponse>> UpdateAsync(Guid id, UpdateHouseholdRequest req, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != id)
             return ServiceResult<HouseholdResponse>.Forbidden();

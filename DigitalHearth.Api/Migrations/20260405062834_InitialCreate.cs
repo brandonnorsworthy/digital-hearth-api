@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -16,11 +15,14 @@ namespace DigitalHearth.Api.Migrations
                 name: "Households",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     JoinCode = table.Column<string>(type: "text", nullable: false),
-                    WeekResetDay = table.Column<int>(type: "integer", nullable: false)
+                    WeekResetDay = table.Column<int>(type: "integer", nullable: false),
+                    GoalMealsPerWeek = table.Column<int>(type: "integer", nullable: true),
+                    MonthlyImageBudget = table.Column<int>(type: "integer", nullable: true),
+                    ImageGenCount = table.Column<int>(type: "integer", nullable: false),
+                    ImageGenMonth = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,12 +33,11 @@ namespace DigitalHearth.Api.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Username = table.Column<string>(type: "text", nullable: false),
                     PinHash = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<string>(type: "text", nullable: false),
-                    HouseholdId = table.Column<int>(type: "integer", nullable: false)
+                    HouseholdId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -53,12 +54,12 @@ namespace DigitalHearth.Api.Migrations
                 name: "MealLibrary",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    HouseholdId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    HouseholdId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    CreatedByUserId = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Tags = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -81,9 +82,8 @@ namespace DigitalHearth.Api.Migrations
                 name: "PushSubscriptions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Endpoint = table.Column<string>(type: "text", nullable: false),
                     P256dh = table.Column<string>(type: "text", nullable: false),
                     Auth = table.Column<string>(type: "text", nullable: false)
@@ -103,15 +103,13 @@ namespace DigitalHearth.Api.Migrations
                 name: "RecurringTasks",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    HouseholdId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    HouseholdId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    Tier = table.Column<string>(type: "text", nullable: false),
                     IntervalDays = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastCompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastCompletedByUserId = table.Column<int>(type: "integer", nullable: true)
+                    LastCompletedByUserId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -131,15 +129,87 @@ namespace DigitalHearth.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserNotifSettings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TaskReminderHour = table.Column<int>(type: "integer", nullable: true),
+                    MediumTermDaysAhead = table.Column<int>(type: "integer", nullable: true),
+                    MealPlannerNotifs = table.Column<bool>(type: "boolean", nullable: false),
+                    ShortTermTaskNotifs = table.Column<bool>(type: "boolean", nullable: false),
+                    MediumTermTaskNotifs = table.Column<bool>(type: "boolean", nullable: false),
+                    LongTermTaskNotifs = table.Column<bool>(type: "boolean", nullable: false),
+                    TaskCompletedNotifs = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserNotifSettings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserNotifSettings_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Images",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MealLibraryId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ImageGuid = table.Column<Guid>(type: "uuid", nullable: false),
+                    ImageData = table.Column<string>(type: "text", nullable: false),
+                    IsAiGenerated = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Images", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Images_MealLibrary_MealLibraryId",
+                        column: x => x.MealLibraryId,
+                        principalTable: "MealLibrary",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MealFavorites",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MealLibraryId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MealFavorites", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MealFavorites_MealLibrary_MealLibraryId",
+                        column: x => x.MealLibraryId,
+                        principalTable: "MealLibrary",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MealFavorites_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "WeeklyMeals",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    HouseholdId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    HouseholdId = table.Column<Guid>(type: "uuid", nullable: false),
                     WeekOf = table.Column<DateOnly>(type: "date", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    MealLibraryId = table.Column<int>(type: "integer", nullable: true)
+                    MealLibraryId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -159,13 +229,41 @@ namespace DigitalHearth.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "NotificationLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PushSubscriptionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RecurringTaskId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DueAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ErrorMessage = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NotificationLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_NotificationLogs_PushSubscriptions_PushSubscriptionId",
+                        column: x => x.PushSubscriptionId,
+                        principalTable: "PushSubscriptions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_NotificationLogs_RecurringTasks_RecurringTaskId",
+                        column: x => x.RecurringTaskId,
+                        principalTable: "RecurringTasks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "NotifPreferences",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    TaskId = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TaskId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -188,10 +286,9 @@ namespace DigitalHearth.Api.Migrations
                 name: "TaskCompletions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    TaskId = table.Column<int>(type: "integer", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TaskId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -218,6 +315,23 @@ namespace DigitalHearth.Api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Images_MealLibraryId",
+                table: "Images",
+                column: "MealLibraryId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MealFavorites_MealLibraryId",
+                table: "MealFavorites",
+                column: "MealLibraryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MealFavorites_UserId_MealLibraryId",
+                table: "MealFavorites",
+                columns: new[] { "UserId", "MealLibraryId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MealLibrary_CreatedByUserId",
                 table: "MealLibrary",
                 column: "CreatedByUserId");
@@ -226,6 +340,17 @@ namespace DigitalHearth.Api.Migrations
                 name: "IX_MealLibrary_HouseholdId",
                 table: "MealLibrary",
                 column: "HouseholdId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationLogs_PushSubscriptionId_RecurringTaskId_DueAt",
+                table: "NotificationLogs",
+                columns: new[] { "PushSubscriptionId", "RecurringTaskId", "DueAt" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationLogs_RecurringTaskId",
+                table: "NotificationLogs",
+                column: "RecurringTaskId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_NotifPreferences_TaskId",
@@ -265,6 +390,12 @@ namespace DigitalHearth.Api.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_UserNotifSettings_UserId",
+                table: "UserNotifSettings",
+                column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_HouseholdId",
                 table: "Users",
                 column: "HouseholdId");
@@ -290,16 +421,28 @@ namespace DigitalHearth.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "NotifPreferences");
+                name: "Images");
 
             migrationBuilder.DropTable(
-                name: "PushSubscriptions");
+                name: "MealFavorites");
+
+            migrationBuilder.DropTable(
+                name: "NotificationLogs");
+
+            migrationBuilder.DropTable(
+                name: "NotifPreferences");
 
             migrationBuilder.DropTable(
                 name: "TaskCompletions");
 
             migrationBuilder.DropTable(
+                name: "UserNotifSettings");
+
+            migrationBuilder.DropTable(
                 name: "WeeklyMeals");
+
+            migrationBuilder.DropTable(
+                name: "PushSubscriptions");
 
             migrationBuilder.DropTable(
                 name: "RecurringTasks");

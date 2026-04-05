@@ -10,7 +10,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
         new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.Image is not null, m.MealLibrary?.Image?.ImageGuid.ToString("N"));
 
-    private static LibraryMealResponse ToLibraryResponse(MealLibrary m, HashSet<int>? favoriteIds = null) =>
+    private static LibraryMealResponse ToLibraryResponse(MealLibrary m, HashSet<Guid>? favoriteIds = null) =>
         new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.Image is not null, favoriteIds?.Contains(m.Id) ?? false, m.Image?.ImageGuid.ToString("N"));
 
     private static DateOnly CurrentWeekStart(int weekResetDay)
@@ -21,7 +21,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     }
 
     public async Task<ServiceResult<IReadOnlyList<WeeklyMealResponse>>> GetWeeklyAsync(
-        int householdId, string? weekOf, User user, CancellationToken ct = default)
+        Guid householdId, string? weekOf, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Forbidden();
@@ -43,7 +43,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     }
 
     public async Task<ServiceResult<WeeklyMealResponse>> AddWeeklyAsync(
-        int householdId, AddWeeklyMealRequest req, User user, CancellationToken ct = default)
+        Guid householdId, AddWeeklyMealRequest req, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<WeeklyMealResponse>.Forbidden();
@@ -52,7 +52,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             return ServiceResult<WeeklyMealResponse>.BadRequest("weekOf must be a valid date (YYYY-MM-DD)");
 
         string name;
-        int? libraryId = null;
+        Guid? libraryId = null;
 
         if (req.MealLibraryId.HasValue)
         {
@@ -84,7 +84,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
         return ServiceResult<WeeklyMealResponse>.Ok(ToWeeklyResponse(meal));
     }
 
-    public async Task<ServiceResult> DeleteWeeklyAsync(int id, User user, CancellationToken ct = default)
+    public async Task<ServiceResult> DeleteWeeklyAsync(Guid id, User user, CancellationToken ct = default)
     {
         var meal = await meals.GetWeeklyByIdAsync(id, ct);
         if (meal is null)
@@ -97,7 +97,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     }
 
     public async Task<ServiceResult<IReadOnlyList<LibraryMealResponse>>> GetLibraryAsync(
-        int householdId, User user, CancellationToken ct = default)
+        Guid householdId, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<IReadOnlyList<LibraryMealResponse>>.Forbidden();
@@ -109,7 +109,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     }
 
     public async Task<ServiceResult<LibraryMealResponse>> AddToLibraryAsync(
-        int householdId, AddLibraryMealRequest req, User user, CancellationToken ct = default)
+        Guid householdId, AddLibraryMealRequest req, User user, CancellationToken ct = default)
     {
         if (user.HouseholdId != householdId)
             return ServiceResult<LibraryMealResponse>.Forbidden();
@@ -173,14 +173,14 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
         return ServiceResult<LibraryMealResponse>.Ok(ToLibraryResponse(meal));
     }
 
-    public async Task<string?> GetLibraryImageAsync(int id, User user, CancellationToken ct = default)
+    public async Task<string?> GetLibraryImageAsync(Guid id, User user, CancellationToken ct = default)
     {
         var meal = await meals.GetLibraryByIdAsync(id, ct);
         if (meal is null || meal.HouseholdId != user.HouseholdId) return null;
         return meal.Image?.ImageData;
     }
 
-    public async Task<ServiceResult> DeleteFromLibraryAsync(int id, User user, CancellationToken ct = default)
+    public async Task<ServiceResult> DeleteFromLibraryAsync(Guid id, User user, CancellationToken ct = default)
     {
         var meal = await meals.GetLibraryByIdAsync(id, ct);
         if (meal is null)
@@ -192,7 +192,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
         return ServiceResult.Ok();
     }
 
-    public async Task<ServiceResult> ToggleFavoriteAsync(int mealLibraryId, bool favorite, User user, CancellationToken ct = default)
+    public async Task<ServiceResult> ToggleFavoriteAsync(Guid mealLibraryId, bool favorite, User user, CancellationToken ct = default)
     {
         var meal = await meals.GetLibraryByIdAsync(mealLibraryId, ct);
         if (meal is null || meal.HouseholdId != user.HouseholdId)
@@ -206,7 +206,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
         return ServiceResult.Ok();
     }
 
-    public async Task<ServiceResult<string>> RegenerateImageAsync(int mealId, User user, CancellationToken ct = default)
+    public async Task<ServiceResult<string>> RegenerateImageAsync(Guid mealId, User user, CancellationToken ct = default)
     {
         var meal = await meals.GetLibraryByIdAsync(mealId, ct);
         if (meal is null) return ServiceResult<string>.NotFound("Library meal not found");
@@ -267,7 +267,7 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
     }
 
     public async Task<ServiceResult<WeeklyMealResponse>> LinkToLibraryAsync(
-        int weeklyMealId, PatchWeeklyMealRequest req, User user, CancellationToken ct = default)
+        Guid weeklyMealId, PatchWeeklyMealRequest req, User user, CancellationToken ct = default)
     {
         var meal = await meals.GetWeeklyByIdAsync(weeklyMealId, ct);
         if (meal is null)

@@ -2,8 +2,8 @@ namespace DigitalHearth.Api.Models;
 
 public class UserNotifSettings
 {
-    public int Id { get; set; }
-    public int UserId { get; set; }
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
 
     /// <summary>Hour of day (0–12) for daily task reminder. Null = not set.</summary>
     public int? TaskReminderHour { get; set; }

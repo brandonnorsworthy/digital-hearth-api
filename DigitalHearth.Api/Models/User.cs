@@ -2,11 +2,11 @@ namespace DigitalHearth.Api.Models;
 
 public class User
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Username { get; set; } = null!;
     public string PinHash { get; set; } = null!;
     public string Role { get; set; } = "member";
-    public int HouseholdId { get; set; }
+    public Guid HouseholdId { get; set; }
 
     public Household Household { get; set; } = null!;
     public ICollection<TaskCompletion> Completions { get; set; } = [];

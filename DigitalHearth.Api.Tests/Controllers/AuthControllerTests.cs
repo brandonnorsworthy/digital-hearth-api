@@ -25,7 +25,7 @@ public class AuthControllerTests
     [Fact]
     public async Task Login_ServiceReturnsOk_Returns200WithBody()
     {
-        var me = new MeResponse(1, "alice", 10);
+        var me = new MeResponse(UserFixtures.DefaultId, "alice", UserFixtures.DefaultHouseholdId);
         _authService
             .Setup(s => s.LoginAsync(It.IsAny<LoginRequest>(), default))
             .ReturnsAsync(ServiceResult<MeResponse>.Ok(me));

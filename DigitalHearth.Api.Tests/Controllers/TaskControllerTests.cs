@@ -14,7 +14,7 @@ public class TaskControllerTests
     private readonly Mock<ITaskService> _taskService = new();
     private readonly TaskController _sut;
 
-    private static readonly TaskResponse FakeTask = new(1, 10, "Vacuum", 7, null, null, DateTime.UtcNow.AddDays(7));
+    private static readonly TaskResponse FakeTask = new(TaskFixtures.DefaultId, UserFixtures.DefaultHouseholdId, "Vacuum", 7, null, null, DateTime.UtcNow.AddDays(7));
 
     public TaskControllerTests()
     {
@@ -28,10 +28,10 @@ public class TaskControllerTests
     public async Task List_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.ListAsync(10, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.ListAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<TaskResponse>>.Ok([FakeTask]));
 
-        var result = await _sut.List(10, default);
+        var result = await _sut.List(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -41,7 +41,7 @@ public class TaskControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.List(10, default);
+        var result = await _sut.List(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -50,10 +50,10 @@ public class TaskControllerTests
     public async Task List_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.ListAsync(10, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.ListAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<TaskResponse>>.Forbidden());
 
-        var result = await _sut.List(10, default);
+        var result = await _sut.List(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -64,10 +64,10 @@ public class TaskControllerTests
     public async Task Create_ServiceReturnsOk_Returns201()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.CreateAsync(10, It.IsAny<CreateTaskRequest>(), It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.CreateAsync(UserFixtures.DefaultHouseholdId, It.IsAny<CreateTaskRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<TaskResponse>.Ok(FakeTask));
 
-        var result = await _sut.Create(10, new CreateTaskRequest("Vacuum", 7), default);
+        var result = await _sut.Create(UserFixtures.DefaultHouseholdId, new CreateTaskRequest("Vacuum", 7), default);
 
         var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
         created.Value.Should().Be(FakeTask);
@@ -78,7 +78,7 @@ public class TaskControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.Create(10, new CreateTaskRequest("Vacuum", 7), default);
+        var result = await _sut.Create(UserFixtures.DefaultHouseholdId, new CreateTaskRequest("Vacuum", 7), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -87,10 +87,10 @@ public class TaskControllerTests
     public async Task Create_ServiceReturnsBadRequest_Returns400()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.CreateAsync(10, It.IsAny<CreateTaskRequest>(), It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.CreateAsync(UserFixtures.DefaultHouseholdId, It.IsAny<CreateTaskRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<TaskResponse>.BadRequest("IntervalDays must be greater than 0"));
 
-        var result = await _sut.Create(10, new CreateTaskRequest("Vacuum", 0), default);
+        var result = await _sut.Create(UserFixtures.DefaultHouseholdId, new CreateTaskRequest("Vacuum", 0), default);
 
         result.Should().BeOfType<BadRequestObjectResult>();
     }
@@ -101,10 +101,10 @@ public class TaskControllerTests
     public async Task Update_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.UpdateAsync(1, It.IsAny<UpdateTaskRequest>(), It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.UpdateAsync(TaskFixtures.DefaultId, It.IsAny<UpdateTaskRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<TaskResponse>.Ok(FakeTask));
 
-        var result = await _sut.Update(1, new UpdateTaskRequest("New Name", null), default);
+        var result = await _sut.Update(TaskFixtures.DefaultId, new UpdateTaskRequest("New Name", null), default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -114,7 +114,7 @@ public class TaskControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.Update(1, new UpdateTaskRequest("New Name", null), default);
+        var result = await _sut.Update(TaskFixtures.DefaultId, new UpdateTaskRequest("New Name", null), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -123,10 +123,10 @@ public class TaskControllerTests
     public async Task Update_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.UpdateAsync(1, It.IsAny<UpdateTaskRequest>(), It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.UpdateAsync(TaskFixtures.DefaultId, It.IsAny<UpdateTaskRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<TaskResponse>.Forbidden());
 
-        var result = await _sut.Update(1, new UpdateTaskRequest("New Name", null), default);
+        var result = await _sut.Update(TaskFixtures.DefaultId, new UpdateTaskRequest("New Name", null), default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -137,10 +137,10 @@ public class TaskControllerTests
     public async Task Delete_Authenticated_ServiceReturnsOk_Returns204()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.DeleteAsync(1, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.DeleteAsync(TaskFixtures.DefaultId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.Delete(1, default);
+        var result = await _sut.Delete(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -150,7 +150,7 @@ public class TaskControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.Delete(1, default);
+        var result = await _sut.Delete(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -159,10 +159,10 @@ public class TaskControllerTests
     public async Task Delete_ServiceReturnsNotFound_Returns404()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.DeleteAsync(1, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.DeleteAsync(TaskFixtures.DefaultId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.NotFound("Task not found"));
 
-        var result = await _sut.Delete(1, default);
+        var result = await _sut.Delete(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -173,10 +173,10 @@ public class TaskControllerTests
     public async Task Complete_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.CompleteAsync(1, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.CompleteAsync(TaskFixtures.DefaultId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<TaskResponse>.Ok(FakeTask));
 
-        var result = await _sut.Complete(1, default);
+        var result = await _sut.Complete(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -186,7 +186,7 @@ public class TaskControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.Complete(1, default);
+        var result = await _sut.Complete(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -195,10 +195,10 @@ public class TaskControllerTests
     public async Task Complete_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.CompleteAsync(1, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.CompleteAsync(TaskFixtures.DefaultId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<TaskResponse>.Forbidden());
 
-        var result = await _sut.Complete(1, default);
+        var result = await _sut.Complete(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -209,10 +209,10 @@ public class TaskControllerTests
     public async Task History_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.GetHistoryAsync(1, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.GetHistoryAsync(TaskFixtures.DefaultId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<CompletionResponse>>.Ok([]));
 
-        var result = await _sut.History(1, default);
+        var result = await _sut.History(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -222,7 +222,7 @@ public class TaskControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.History(1, default);
+        var result = await _sut.History(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -231,10 +231,10 @@ public class TaskControllerTests
     public async Task History_ServiceReturnsNotFound_Returns404()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _taskService.Setup(s => s.GetHistoryAsync(1, It.IsAny<Models.User>(), default))
+        _taskService.Setup(s => s.GetHistoryAsync(TaskFixtures.DefaultId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<CompletionResponse>>.NotFound("Task not found"));
 
-        var result = await _sut.History(1, default);
+        var result = await _sut.History(TaskFixtures.DefaultId, default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }

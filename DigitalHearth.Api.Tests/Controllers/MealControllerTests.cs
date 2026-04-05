@@ -17,8 +17,8 @@ public class MealControllerTests
     private readonly Mock<IImageGenerationService> _imageGen = new();
     private readonly MealController _sut;
 
-    private static readonly WeeklyMealResponse FakeWeekly = new(1, "2025-01-06", "Pasta", null, false, false, null);
-    private static readonly LibraryMealResponse FakeLibrary = new(1, "Pasta", "alice", DateTime.UtcNow, [], false, false, null);
+    private static readonly WeeklyMealResponse FakeWeekly = new(MealFixtures.DefaultMealId, "2025-01-06", "Pasta", null, false, false, null);
+    private static readonly LibraryMealResponse FakeLibrary = new(MealFixtures.DefaultMealId, "Pasta", "alice", DateTime.UtcNow, [], false, false, null);
 
     public MealControllerTests()
     {
@@ -69,10 +69,10 @@ public class MealControllerTests
     public async Task GetWeekly_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.GetWeeklyAsync(10, null, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.GetWeeklyAsync(UserFixtures.DefaultHouseholdId, null, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Ok([FakeWeekly]));
 
-        var result = await _sut.GetWeekly(10, null, default);
+        var result = await _sut.GetWeekly(UserFixtures.DefaultHouseholdId, null, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -82,7 +82,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.GetWeekly(10, null, default);
+        var result = await _sut.GetWeekly(UserFixtures.DefaultHouseholdId, null, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -91,10 +91,10 @@ public class MealControllerTests
     public async Task GetWeekly_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.GetWeeklyAsync(10, null, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.GetWeeklyAsync(UserFixtures.DefaultHouseholdId, null, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<WeeklyMealResponse>>.Forbidden());
 
-        var result = await _sut.GetWeekly(10, null, default);
+        var result = await _sut.GetWeekly(UserFixtures.DefaultHouseholdId, null, default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -105,10 +105,10 @@ public class MealControllerTests
     public async Task AddWeekly_ServiceReturnsOk_Returns201()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.AddWeeklyAsync(10, It.IsAny<AddWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.AddWeeklyAsync(UserFixtures.DefaultHouseholdId, It.IsAny<AddWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<WeeklyMealResponse>.Ok(FakeWeekly));
 
-        var result = await _sut.AddWeekly(10, new AddWeeklyMealRequest("2025-01-06", null, "Pasta"), default);
+        var result = await _sut.AddWeekly(UserFixtures.DefaultHouseholdId, new AddWeeklyMealRequest("2025-01-06", null, "Pasta"), default);
 
         var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
         created.Value.Should().Be(FakeWeekly);
@@ -119,7 +119,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.AddWeekly(10, new AddWeeklyMealRequest("2025-01-06", null, "Pasta"), default);
+        var result = await _sut.AddWeekly(UserFixtures.DefaultHouseholdId, new AddWeeklyMealRequest("2025-01-06", null, "Pasta"), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -128,10 +128,10 @@ public class MealControllerTests
     public async Task AddWeekly_ServiceReturnsBadRequest_Returns400()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.AddWeeklyAsync(10, It.IsAny<AddWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.AddWeeklyAsync(UserFixtures.DefaultHouseholdId, It.IsAny<AddWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<WeeklyMealResponse>.BadRequest("Either mealLibraryId or name is required"));
 
-        var result = await _sut.AddWeekly(10, new AddWeeklyMealRequest("2025-01-06", null, null), default);
+        var result = await _sut.AddWeekly(UserFixtures.DefaultHouseholdId, new AddWeeklyMealRequest("2025-01-06", null, null), default);
 
         result.Should().BeOfType<BadRequestObjectResult>();
     }
@@ -142,10 +142,10 @@ public class MealControllerTests
     public async Task PatchWeekly_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.LinkToLibraryAsync(1, It.IsAny<PatchWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.LinkToLibraryAsync(MealFixtures.DefaultMealId, It.IsAny<PatchWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<WeeklyMealResponse>.Ok(FakeWeekly));
 
-        var result = await _sut.PatchWeekly(1, new PatchWeeklyMealRequest(5), default);
+        var result = await _sut.PatchWeekly(MealFixtures.DefaultMealId, new PatchWeeklyMealRequest(MealFixtures.DefaultMealId), default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -155,7 +155,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.PatchWeekly(1, new PatchWeeklyMealRequest(5), default);
+        var result = await _sut.PatchWeekly(MealFixtures.DefaultMealId, new PatchWeeklyMealRequest(MealFixtures.DefaultMealId), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -164,10 +164,10 @@ public class MealControllerTests
     public async Task PatchWeekly_ServiceReturnsNotFound_Returns404()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.LinkToLibraryAsync(1, It.IsAny<PatchWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.LinkToLibraryAsync(MealFixtures.DefaultMealId, It.IsAny<PatchWeeklyMealRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<WeeklyMealResponse>.NotFound("Weekly meal not found"));
 
-        var result = await _sut.PatchWeekly(1, new PatchWeeklyMealRequest(5), default);
+        var result = await _sut.PatchWeekly(MealFixtures.DefaultMealId, new PatchWeeklyMealRequest(MealFixtures.DefaultMealId), default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -178,10 +178,10 @@ public class MealControllerTests
     public async Task DeleteWeekly_Authenticated_ServiceReturnsOk_Returns204()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.DeleteWeeklyAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.DeleteWeeklyAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.DeleteWeekly(1, default);
+        var result = await _sut.DeleteWeekly(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -191,7 +191,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.DeleteWeekly(1, default);
+        var result = await _sut.DeleteWeekly(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -200,10 +200,10 @@ public class MealControllerTests
     public async Task DeleteWeekly_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.DeleteWeeklyAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.DeleteWeeklyAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Forbidden());
 
-        var result = await _sut.DeleteWeekly(1, default);
+        var result = await _sut.DeleteWeekly(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -214,10 +214,10 @@ public class MealControllerTests
     public async Task GetLibrary_Authenticated_ServiceReturnsOk_Returns200()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.GetLibraryAsync(10, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.GetLibraryAsync(UserFixtures.DefaultHouseholdId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<IReadOnlyList<LibraryMealResponse>>.Ok([FakeLibrary]));
 
-        var result = await _sut.GetLibrary(10, default);
+        var result = await _sut.GetLibrary(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -227,7 +227,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.GetLibrary(10, default);
+        var result = await _sut.GetLibrary(UserFixtures.DefaultHouseholdId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -238,10 +238,10 @@ public class MealControllerTests
     public async Task AddToLibrary_ServiceReturnsOk_Returns201()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.AddToLibraryAsync(10, It.IsAny<AddLibraryMealRequest>(), It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.AddToLibraryAsync(UserFixtures.DefaultHouseholdId, It.IsAny<AddLibraryMealRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<LibraryMealResponse>.Ok(FakeLibrary));
 
-        var result = await _sut.AddToLibrary(10, new AddLibraryMealRequest("Pasta", null), default);
+        var result = await _sut.AddToLibrary(UserFixtures.DefaultHouseholdId, new AddLibraryMealRequest("Pasta", null), default);
 
         var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
         created.Value.Should().Be(FakeLibrary);
@@ -252,7 +252,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.AddToLibrary(10, new AddLibraryMealRequest("Pasta", null), default);
+        var result = await _sut.AddToLibrary(UserFixtures.DefaultHouseholdId, new AddLibraryMealRequest("Pasta", null), default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -261,10 +261,10 @@ public class MealControllerTests
     public async Task AddToLibrary_ServiceReturnsForbidden_Returns403()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.AddToLibraryAsync(10, It.IsAny<AddLibraryMealRequest>(), It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.AddToLibraryAsync(UserFixtures.DefaultHouseholdId, It.IsAny<AddLibraryMealRequest>(), It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<LibraryMealResponse>.Forbidden());
 
-        var result = await _sut.AddToLibrary(10, new AddLibraryMealRequest("Pasta", null), default);
+        var result = await _sut.AddToLibrary(UserFixtures.DefaultHouseholdId, new AddLibraryMealRequest("Pasta", null), default);
 
         result.Should().BeOfType<ForbidResult>();
     }
@@ -275,10 +275,10 @@ public class MealControllerTests
     public async Task DeleteFromLibrary_Authenticated_ServiceReturnsOk_Returns204()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.DeleteFromLibraryAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.DeleteFromLibraryAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.DeleteFromLibrary(1, default);
+        var result = await _sut.DeleteFromLibrary(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -288,7 +288,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.DeleteFromLibrary(1, default);
+        var result = await _sut.DeleteFromLibrary(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -297,10 +297,10 @@ public class MealControllerTests
     public async Task DeleteFromLibrary_ServiceReturnsNotFound_Returns404()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.DeleteFromLibraryAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.DeleteFromLibraryAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.NotFound("Library meal not found"));
 
-        var result = await _sut.DeleteFromLibrary(1, default);
+        var result = await _sut.DeleteFromLibrary(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -311,10 +311,10 @@ public class MealControllerTests
     public async Task FavoriteMeal_Authenticated_ServiceReturnsOk_Returns204()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.ToggleFavoriteAsync(1, true, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.ToggleFavoriteAsync(MealFixtures.DefaultMealId, true, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.FavoriteMeal(1, default);
+        var result = await _sut.FavoriteMeal(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -324,7 +324,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.FavoriteMeal(1, default);
+        var result = await _sut.FavoriteMeal(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -333,10 +333,10 @@ public class MealControllerTests
     public async Task FavoriteMeal_ServiceReturnsNotFound_Returns404()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.ToggleFavoriteAsync(1, true, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.ToggleFavoriteAsync(MealFixtures.DefaultMealId, true, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.NotFound("Library meal not found"));
 
-        var result = await _sut.FavoriteMeal(1, default);
+        var result = await _sut.FavoriteMeal(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -347,10 +347,10 @@ public class MealControllerTests
     public async Task UnfavoriteMeal_Authenticated_ServiceReturnsOk_Returns204()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.ToggleFavoriteAsync(1, false, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.ToggleFavoriteAsync(MealFixtures.DefaultMealId, false, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult.Ok());
 
-        var result = await _sut.UnfavoriteMeal(1, default);
+        var result = await _sut.UnfavoriteMeal(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NoContentResult>();
     }
@@ -360,7 +360,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.UnfavoriteMeal(1, default);
+        var result = await _sut.UnfavoriteMeal(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -371,10 +371,10 @@ public class MealControllerTests
     public async Task RegenerateImage_Authenticated_ServiceReturnsOk_Returns200WithToken()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.RegenerateImageAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<string>.Ok("abc123token"));
 
-        var result = await _sut.RegenerateImage(1, default);
+        var result = await _sut.RegenerateImage(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<OkObjectResult>();
     }
@@ -384,7 +384,7 @@ public class MealControllerTests
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.RegenerateImage(1, default);
+        var result = await _sut.RegenerateImage(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<UnauthorizedObjectResult>();
     }
@@ -393,10 +393,10 @@ public class MealControllerTests
     public async Task RegenerateImage_ServiceReturnsNotFound_Returns404()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.RegenerateImageAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<string>.NotFound("Library meal not found"));
 
-        var result = await _sut.RegenerateImage(1, default);
+        var result = await _sut.RegenerateImage(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<NotFoundObjectResult>();
     }
@@ -405,10 +405,10 @@ public class MealControllerTests
     public async Task RegenerateImage_ServiceReturnsBadRequest_Returns400()
     {
         _currentUser.Setup(s => s.GetUserAsync(default)).ReturnsAsync(UserFixtures.Member());
-        _mealService.Setup(s => s.RegenerateImageAsync(1, It.IsAny<Models.User>(), default))
+        _mealService.Setup(s => s.RegenerateImageAsync(MealFixtures.DefaultMealId, It.IsAny<Models.User>(), default))
             .ReturnsAsync(ServiceResult<string>.BadRequest("Image generation failed or is not configured"));
 
-        var result = await _sut.RegenerateImage(1, default);
+        var result = await _sut.RegenerateImage(MealFixtures.DefaultMealId, default);
 
         result.Should().BeOfType<BadRequestObjectResult>();
     }

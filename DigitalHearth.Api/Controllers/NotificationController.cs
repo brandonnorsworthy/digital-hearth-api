@@ -37,8 +37,8 @@ public class NotificationController(
         return ToActionResult(await notificationService.UnsubscribeAsync(user!, ct));
     }
 
-    [HttpGet("api/households/{householdId:int}/notifications/preferences")]
-    public async Task<IActionResult> GetPreferences(int householdId, CancellationToken ct)
+    [HttpGet("api/households/{householdId:guid}/notifications/preferences")]
+    public async Task<IActionResult> GetPreferences(Guid householdId, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
@@ -54,8 +54,8 @@ public class NotificationController(
         return StatusCode(201);
     }
 
-    [HttpDelete("api/notifications/preferences/opt-out/{taskId:int}")]
-    public async Task<IActionResult> RemoveOptOut(int taskId, CancellationToken ct)
+    [HttpDelete("api/notifications/preferences/opt-out/{taskId:guid}")]
+    public async Task<IActionResult> RemoveOptOut(Guid taskId, CancellationToken ct)
     {
         var (user, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;
@@ -80,8 +80,8 @@ public class NotificationController(
     }
 
 #if DEBUG
-    [HttpPost("api/notifications/test/{userId:int}")]
-    public async Task<IActionResult> Test(int userId, CancellationToken ct)
+    [HttpPost("api/notifications/test/{userId:guid}")]
+    public async Task<IActionResult> Test(Guid userId, CancellationToken ct)
     {
         var (_, error) = await RequireUserAsync(currentUser, ct);
         if (error is not null) return error;

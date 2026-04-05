@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DigitalHearth.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260405043057_AddMealImageToken")]
-    partial class AddMealImageToken
+    [Migration("20260405062834_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,11 +27,9 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.Household", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<int?>("GoalMealsPerWeek")
                         .HasColumnType("integer");
@@ -64,19 +62,50 @@ namespace DigitalHearth.Api.Migrations
                     b.ToTable("Households");
                 });
 
+            modelBuilder.Entity("DigitalHearth.Api.Models.Image", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageData")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ImageGuid")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsAiGenerated")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MealLibraryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MealLibraryId")
+                        .IsUnique();
+
+                    b.ToTable("Images");
+                });
+
             modelBuilder.Entity("DigitalHearth.Api.Models.MealFavorite", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<Guid>("MealLibraryId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("MealLibraryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -90,26 +119,18 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.MealLibrary", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("HouseholdId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ImageData")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ImageToken")
-                        .HasColumnType("text");
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -130,17 +151,15 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.NotifPreference", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("TaskId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -154,11 +173,9 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.NotificationLog", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("DueAt")
                         .HasColumnType("timestamp with time zone");
@@ -166,11 +183,11 @@ namespace DigitalHearth.Api.Migrations
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("text");
 
-                    b.Property<int>("PushSubscriptionId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("PushSubscriptionId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("RecurringTaskId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("RecurringTaskId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("SentAt")
                         .HasColumnType("timestamp with time zone");
@@ -190,11 +207,9 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.PushSubscription", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Auth")
                         .IsRequired()
@@ -208,8 +223,8 @@ namespace DigitalHearth.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -221,17 +236,15 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.RecurringTask", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("HouseholdId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("IntervalDays")
                         .HasColumnType("integer");
@@ -239,8 +252,8 @@ namespace DigitalHearth.Api.Migrations
                     b.Property<DateTime?>("LastCompletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("LastCompletedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("LastCompletedByUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -257,20 +270,18 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.TaskCompletion", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("TaskId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -283,14 +294,12 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("HouseholdId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PinHash")
                         .IsRequired()
@@ -316,11 +325,9 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.UserNotifSettings", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("LongTermTaskNotifs")
                         .HasColumnType("boolean");
@@ -343,8 +350,8 @@ namespace DigitalHearth.Api.Migrations
                     b.Property<int?>("TaskReminderHour")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -356,17 +363,15 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.WeeklyMeal", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("HouseholdId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("MealLibraryId")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("MealLibraryId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -382,6 +387,17 @@ namespace DigitalHearth.Api.Migrations
                     b.HasIndex("HouseholdId", "WeekOf");
 
                     b.ToTable("WeeklyMeals");
+                });
+
+            modelBuilder.Entity("DigitalHearth.Api.Models.Image", b =>
+                {
+                    b.HasOne("DigitalHearth.Api.Models.MealLibrary", "MealLibrary")
+                        .WithOne("Image")
+                        .HasForeignKey("DigitalHearth.Api.Models.Image", "MealLibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MealLibrary");
                 });
 
             modelBuilder.Entity("DigitalHearth.Api.Models.MealFavorite", b =>
@@ -561,6 +577,8 @@ namespace DigitalHearth.Api.Migrations
 
             modelBuilder.Entity("DigitalHearth.Api.Models.MealLibrary", b =>
                 {
+                    b.Navigation("Image");
+
                     b.Navigation("WeeklyMeals");
                 });
 

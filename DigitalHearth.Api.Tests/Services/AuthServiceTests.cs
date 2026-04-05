@@ -73,7 +73,7 @@ public class AuthServiceTests
 
         await _sut.LoginAsync(new LoginRequest("alice", "wrong"));
 
-        _currentUser.Verify(s => s.SetUserId(It.IsAny<int>()), Times.Never);
+        _currentUser.Verify(s => s.SetUserId(It.IsAny<Guid>()), Times.Never);
     }
 
     // --- ChangePin ---
@@ -93,9 +93,9 @@ public class AuthServiceTests
     [Fact]
     public async Task ChangePin_UserNotFound_ReturnsUnauthorized()
     {
-        _users.Setup(r => r.GetByIdAsync(It.IsAny<int>(), default)).ReturnsAsync((Models.User?)null);
+        _users.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), default)).ReturnsAsync((Models.User?)null);
 
-        var result = await _sut.ChangePinAsync(99, new ChangePinRequest("1234", "5678"));
+        var result = await _sut.ChangePinAsync(UserFixtures.OutsideHouseholdId, new ChangePinRequest("1234", "5678"));
 
         result.Status.Should().Be(ServiceResultStatus.Unauthorized);
     }
@@ -109,7 +109,7 @@ public class AuthServiceTests
         var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("wrong", "5678"));
 
         result.Status.Should().Be(ServiceResultStatus.Unauthorized);
-        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<int>(), It.IsAny<string>(), default), Times.Never);
+        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<Guid>(), It.IsAny<string>(), default), Times.Never);
     }
 
     [Theory]
@@ -125,6 +125,6 @@ public class AuthServiceTests
         var result = await _sut.ChangePinAsync(user.Id, new ChangePinRequest("1234", newPin));
 
         result.Status.Should().Be(ServiceResultStatus.BadRequest);
-        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<int>(), It.IsAny<string>(), default), Times.Never);
+        _users.Verify(r => r.UpdatePinHashAsync(It.IsAny<Guid>(), It.IsAny<string>(), default), Times.Never);
     }
 }

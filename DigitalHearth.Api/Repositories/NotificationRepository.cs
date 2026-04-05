@@ -6,13 +6,13 @@ namespace DigitalHearth.Api.Repositories;
 
 public class NotificationRepository(AppDbContext db) : INotificationRepository
 {
-    public async Task<PushSubscription?> GetSubscriptionAsync(int userId, string endpoint, CancellationToken ct)
+    public async Task<PushSubscription?> GetSubscriptionAsync(Guid userId, string endpoint, CancellationToken ct)
     {
         return await db.PushSubscriptions
             .FirstOrDefaultAsync(s => s.UserId == userId && s.Endpoint == endpoint, ct);
     }
 
-    public async Task<List<PushSubscription>> GetSubscriptionsByUserAsync(int userId, CancellationToken ct)
+    public async Task<List<PushSubscription>> GetSubscriptionsByUserAsync(Guid userId, CancellationToken ct)
     {
         return await db.PushSubscriptions
             .Where(s => s.UserId == userId)
@@ -40,7 +40,7 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
             .ExecuteDeleteAsync(ct);
     }
 
-    public async Task<List<int>> GetOptedOutTaskIdsAsync(int userId, CancellationToken ct)
+    public async Task<List<Guid>> GetOptedOutTaskIdsAsync(Guid userId, CancellationToken ct)
     {
         return await db.NotifPreferences
             .Where(p => p.UserId == userId)
@@ -48,7 +48,7 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
             .ToListAsync(ct);
     }
 
-    public async Task<bool> IsOptedOutAsync(int userId, int taskId, CancellationToken ct)
+    public async Task<bool> IsOptedOutAsync(Guid userId, Guid taskId, CancellationToken ct)
     {
         return await db.NotifPreferences
             .AnyAsync(p => p.UserId == userId && p.TaskId == taskId, ct);
@@ -60,7 +60,7 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<NotifPreference?> GetPreferenceAsync(int userId, int taskId, CancellationToken ct)
+    public async Task<NotifPreference?> GetPreferenceAsync(Guid userId, Guid taskId, CancellationToken ct)
     {
         return await db.NotifPreferences
             .FirstOrDefaultAsync(p => p.UserId == userId && p.TaskId == taskId, ct);
@@ -72,7 +72,7 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> HasLogAsync(int subscriptionId, int taskId, DateTime dueAt, CancellationToken ct)
+    public async Task<bool> HasLogAsync(Guid subscriptionId, Guid taskId, DateTime dueAt, CancellationToken ct)
     {
         return await db.NotificationLogs
             .AnyAsync(l => l.PushSubscriptionId == subscriptionId
@@ -86,7 +86,7 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<UserNotifSettings?> GetUserNotifSettingsAsync(int userId, CancellationToken ct)
+    public async Task<UserNotifSettings?> GetUserNotifSettingsAsync(Guid userId, CancellationToken ct)
     {
         return await db.UserNotifSettings
             .FirstOrDefaultAsync(s => s.UserId == userId, ct);

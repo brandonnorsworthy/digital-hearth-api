@@ -6,7 +6,7 @@ namespace DigitalHearth.Api.Repositories;
 
 public class HouseholdRepository(AppDbContext db) : IHouseholdRepository
 {
-    public async Task<Household?> GetByIdAsync(int id, CancellationToken ct)
+    public async Task<Household?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         return await db.Households.FindAsync([id], ct);
     }

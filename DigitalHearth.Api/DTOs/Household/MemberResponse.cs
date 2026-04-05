@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Household;
 
-public record MemberResponse(int Id, string Username, string Role);
+public record MemberResponse(Guid Id, string Username, string Role);

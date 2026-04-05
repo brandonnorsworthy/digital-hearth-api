@@ -7,7 +7,7 @@ public interface IHouseholdService
 {
     Task<ServiceResult<HouseholdWithUserResponse>> CreateAsync(CreateHouseholdRequest req, CancellationToken ct = default);
     Task<ServiceResult<HouseholdWithUserResponse>> JoinAsync(JoinHouseholdRequest req, CancellationToken ct = default);
-    Task<ServiceResult<HouseholdResponse>> GetByIdAsync(int id, User user, CancellationToken ct = default);
-    Task<ServiceResult<IReadOnlyList<MemberResponse>>> GetMembersAsync(int id, User user, CancellationToken ct = default);
-    Task<ServiceResult<HouseholdResponse>> UpdateAsync(int id, UpdateHouseholdRequest req, User user, CancellationToken ct = default);
+    Task<ServiceResult<HouseholdResponse>> GetByIdAsync(Guid id, User user, CancellationToken ct = default);
+    Task<ServiceResult<IReadOnlyList<MemberResponse>>> GetMembersAsync(Guid id, User user, CancellationToken ct = default);
+    Task<ServiceResult<HouseholdResponse>> UpdateAsync(Guid id, UpdateHouseholdRequest req, User user, CancellationToken ct = default);
 }

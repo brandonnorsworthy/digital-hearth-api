@@ -1,3 +1,3 @@
 namespace DigitalHearth.Api.DTOs.Meal;
 
-public record WeeklyMealResponse(int Id, string WeekOf, string Name, int? MealLibraryId, bool IsFromLibrary, bool HasImage, string? ImageGuid);
+public record WeeklyMealResponse(Guid Id, string WeekOf, string Name, Guid? MealLibraryId, bool IsFromLibrary, bool HasImage, string? ImageGuid);

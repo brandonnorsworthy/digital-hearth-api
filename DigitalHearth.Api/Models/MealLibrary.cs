@@ -2,10 +2,10 @@ namespace DigitalHearth.Api.Models;
 
 public class MealLibrary
 {
-    public int Id { get; set; }
-    public int HouseholdId { get; set; }
+    public Guid Id { get; set; }
+    public Guid HouseholdId { get; set; }
     public string Name { get; set; } = null!;
-    public int CreatedByUserId { get; set; }
+    public Guid CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; }
     public string[] Tags { get; set; } = [];
     public Image? Image { get; set; }

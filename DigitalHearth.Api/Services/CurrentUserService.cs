@@ -10,14 +10,14 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor, IUserR
     private const string CookieName = "dh_auth";
     private readonly IDataProtector _protector = dpProvider.CreateProtector("DigitalHearth.Auth");
 
-    public int? GetUserId()
+    public Guid? GetUserId()
     {
         var ctx = httpContextAccessor.HttpContext;
         if (ctx is null) return null;
         if (!ctx.Request.Cookies.TryGetValue(CookieName, out var value)) return null;
         try
         {
-            return int.Parse(_protector.Unprotect(value));
+            return Guid.Parse(_protector.Unprotect(value));
         }
         catch
         {
@@ -34,7 +34,7 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor, IUserR
         return await users.GetByIdAsync(id.Value, ct);
     }
 
-    public void SetUserId(int userId)
+    public void SetUserId(Guid userId)
     {
         var value = _protector.Protect(userId.ToString());
         var ctx = httpContextAccessor.HttpContext!;

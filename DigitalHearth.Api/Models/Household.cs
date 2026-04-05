@@ -2,7 +2,7 @@ namespace DigitalHearth.Api.Models;
 
 public class Household
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Name { get; set; } = null!;
     public string JoinCode { get; set; } = null!;
     public int WeekResetDay { get; set; } = 1; // 0=Sun … 6=Sat, default Monday
