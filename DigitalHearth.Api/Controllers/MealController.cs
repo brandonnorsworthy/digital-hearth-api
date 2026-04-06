@@ -74,6 +74,14 @@ public class MealController(ICurrentUserService currentUser, IMealService mealSe
         return ToActionResult(await mealService.DeleteWeeklyAsync(id, user!, ct));
     }
 
+    [HttpPatch("api/meals/weekly/{id:guid}/cooked")]
+    public async Task<IActionResult> MarkCooked(Guid id, [FromBody] MarkCookedRequest req, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await mealService.MarkCookedAsync(id, req.IsCooked, user!, ct));
+    }
+
     [HttpGet("api/households/{householdId:guid}/meals/library")]
     public async Task<IActionResult> GetLibrary(Guid householdId, CancellationToken ct)
     {

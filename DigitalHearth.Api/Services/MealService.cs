@@ -8,7 +8,7 @@ namespace DigitalHearth.Api.Services;
 public class MealService(IMealRepository meals, IHouseholdRepository households, IServiceScopeFactory scopeFactory, IImageGenerationService imageGeneration) : IMealService
 {
     private static WeeklyMealResponse ToWeeklyResponse(WeeklyMeal m) =>
-        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.Image is not null, m.MealLibrary?.Image?.ImageGuid.ToString("N"));
+        new(m.Id, m.WeekOf.ToString("yyyy-MM-dd"), m.Name, m.MealLibraryId, m.MealLibraryId.HasValue, m.MealLibrary?.Image is not null, m.MealLibrary?.Image?.ImageGuid.ToString("N"), m.IsCooked);
 
     private static LibraryMealResponse ToLibraryResponse(MealLibrary m, HashSet<Guid>? favoriteIds = null) =>
         new(m.Id, m.Name, m.CreatedByUser.Username, m.CreatedAt, m.Tags, m.Image is not null, favoriteIds?.Contains(m.Id) ?? false, m.Image?.ImageGuid.ToString("N"));
@@ -264,6 +264,21 @@ public class MealService(IMealRepository meals, IHouseholdRepository households,
             household.ImageGenCount = 0;
         }
         household.ImageGenCount++;
+    }
+
+    public async Task<ServiceResult<WeeklyMealResponse>> MarkCookedAsync(
+        Guid id, bool isCooked, User user, CancellationToken ct = default)
+    {
+        var meal = await meals.GetWeeklyByIdAsync(id, ct);
+        if (meal is null)
+            return ServiceResult<WeeklyMealResponse>.NotFound("Weekly meal not found");
+        if (meal.HouseholdId != user.HouseholdId)
+            return ServiceResult<WeeklyMealResponse>.Forbidden();
+
+        meal.IsCooked = isCooked;
+        await meals.SaveAsync(ct);
+
+        return ServiceResult<WeeklyMealResponse>.Ok(ToWeeklyResponse(meal));
     }
 
     public async Task<ServiceResult<WeeklyMealResponse>> LinkToLibraryAsync(

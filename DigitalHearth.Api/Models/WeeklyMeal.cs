@@ -7,6 +7,7 @@ public class WeeklyMeal
     public DateOnly WeekOf { get; set; }
     public string Name { get; set; } = null!;
     public Guid? MealLibraryId { get; set; }
+    public bool IsCooked { get; set; }
 
     public Household Household { get; set; } = null!;
     public MealLibrary? MealLibrary { get; set; }

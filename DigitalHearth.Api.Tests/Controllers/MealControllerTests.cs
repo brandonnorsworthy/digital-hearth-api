@@ -17,7 +17,7 @@ public class MealControllerTests
     private readonly Mock<IImageGenerationService> _imageGen = new();
     private readonly MealController _sut;
 
-    private static readonly WeeklyMealResponse FakeWeekly = new(MealFixtures.DefaultMealId, "2025-01-06", "Pasta", null, false, false, null);
+    private static readonly WeeklyMealResponse FakeWeekly = new(MealFixtures.DefaultMealId, "2025-01-06", "Pasta", null, false, false, null, false);
     private static readonly LibraryMealResponse FakeLibrary = new(MealFixtures.DefaultMealId, "Pasta", "alice", DateTime.UtcNow, [], false, false, null);
 
     public MealControllerTests()

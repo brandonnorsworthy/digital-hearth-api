@@ -9,6 +9,7 @@ public interface IMealService
     Task<ServiceResult<WeeklyMealResponse>> AddWeeklyAsync(Guid householdId, AddWeeklyMealRequest req, User user, CancellationToken ct = default);
     Task<ServiceResult<WeeklyMealResponse>> LinkToLibraryAsync(Guid weeklyMealId, PatchWeeklyMealRequest req, User user, CancellationToken ct = default);
     Task<ServiceResult> DeleteWeeklyAsync(Guid id, User user, CancellationToken ct = default);
+    Task<ServiceResult<WeeklyMealResponse>> MarkCookedAsync(Guid id, bool isCooked, User user, CancellationToken ct = default);
     Task<ServiceResult<IReadOnlyList<LibraryMealResponse>>> GetLibraryAsync(Guid householdId, User user, CancellationToken ct = default);
     Task<ServiceResult<LibraryMealResponse>> AddToLibraryAsync(Guid householdId, AddLibraryMealRequest req, User user, CancellationToken ct = default);
     Task<ServiceResult> DeleteFromLibraryAsync(Guid id, User user, CancellationToken ct = default);
