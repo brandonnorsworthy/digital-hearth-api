@@ -16,11 +16,12 @@ public class HouseholdServiceTests
     private readonly Mock<IUserRepository> _users = new();
     private readonly Mock<ICurrentUserService> _currentUser = new();
     private readonly Mock<IJoinCodeService> _joinCode = new();
+    private readonly Mock<IMealRepository> _meals = new();
     private readonly HouseholdService _sut;
 
     public HouseholdServiceTests()
     {
-        _sut = new HouseholdService(_households.Object, _users.Object, _currentUser.Object, _joinCode.Object);
+        _sut = new HouseholdService(_households.Object, _users.Object, _currentUser.Object, _joinCode.Object, _meals.Object);
         _joinCode.Setup(j => j.GenerateUniqueCodeAsync(_households.Object, default)).ReturnsAsync("XYZ789");
         _users.Setup(r => r.UsernameExistsAsync(It.IsAny<string>(), default)).ReturnsAsync(false);
         _households.Setup(r => r.CreateAsync(It.IsAny<Household>(), default))
@@ -322,5 +323,37 @@ public class HouseholdServiceTests
 
         result.Value!.Name.Should().Be("Original");
         result.Value.WeekResetDay.Should().Be("Friday");
+    }
+
+    [Fact]
+    public async Task Update_WeekResetDayChanged_ReanchorsWeeklyMeals()
+    {
+        var household = HouseholdFixtures.Default(weekResetDay: 1); // Monday
+        _households.Setup(r => r.GetByIdAsync(UserFixtures.DefaultHouseholdId, default)).ReturnsAsync(household);
+        var user = UserFixtures.Admin();
+
+        await _sut.UpdateAsync(UserFixtures.DefaultHouseholdId, new UpdateHouseholdRequest(null, "Sunday", null, null), user);
+
+        _meals.Verify(r => r.ReanchorWeeklyMealsAsync(
+            UserFixtures.DefaultHouseholdId,
+            It.IsAny<DateOnly>(),
+            It.IsAny<DateOnly>(),
+            default), Times.Once);
+    }
+
+    [Fact]
+    public async Task Update_WeekResetDaySameValue_DoesNotReanchorMeals()
+    {
+        var household = HouseholdFixtures.Default(weekResetDay: 1); // Monday
+        _households.Setup(r => r.GetByIdAsync(UserFixtures.DefaultHouseholdId, default)).ReturnsAsync(household);
+        var user = UserFixtures.Admin();
+
+        await _sut.UpdateAsync(UserFixtures.DefaultHouseholdId, new UpdateHouseholdRequest(null, "Monday", null, null), user);
+
+        _meals.Verify(r => r.ReanchorWeeklyMealsAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<DateOnly>(),
+            It.IsAny<DateOnly>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 }

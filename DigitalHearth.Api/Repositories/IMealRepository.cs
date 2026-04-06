@@ -16,4 +16,5 @@ public interface IMealRepository
     Task<HashSet<Guid>> GetFavoriteIdsAsync(Guid userId, Guid householdId, CancellationToken ct);
     Task FavoriteMealAsync(Guid userId, Guid mealLibraryId, CancellationToken ct);
     Task UnfavoriteMealAsync(Guid userId, Guid mealLibraryId, CancellationToken ct);
+    Task ReanchorWeeklyMealsAsync(Guid householdId, DateOnly oldCurrentWeekOf, DateOnly newCurrentWeekOf, CancellationToken ct);
 }

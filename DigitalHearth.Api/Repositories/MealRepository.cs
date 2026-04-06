@@ -94,4 +94,19 @@ public class MealRepository(AppDbContext db) : IMealRepository
             .Where(f => f.UserId == userId && f.MealLibraryId == mealLibraryId)
             .ExecuteDeleteAsync(ct);
     }
+
+    public async Task ReanchorWeeklyMealsAsync(Guid householdId, DateOnly oldCurrentWeekOf, DateOnly newCurrentWeekOf, CancellationToken ct)
+    {
+        var meals = await db.WeeklyMeals
+            .Where(m => m.HouseholdId == householdId)
+            .ToListAsync(ct);
+
+        foreach (var meal in meals)
+        {
+            var weekIndex = (meal.WeekOf.DayNumber - oldCurrentWeekOf.DayNumber) / 7;
+            meal.WeekOf = newCurrentWeekOf.AddDays(weekIndex * 7);
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
 }

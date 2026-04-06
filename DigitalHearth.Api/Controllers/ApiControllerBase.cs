@@ -21,7 +21,7 @@ public abstract class ApiControllerBase : ControllerBase
     {
         ServiceResultStatus.Ok => NoContent(),
         ServiceResultStatus.NotFound => NotFound(new { error = result.Error }),
-        ServiceResultStatus.Forbidden => Forbid(),
+        ServiceResultStatus.Forbidden => StatusCode(403, new { error = "Forbidden" }),
         ServiceResultStatus.BadRequest => BadRequest(new { error = result.Error }),
         ServiceResultStatus.Conflict => Conflict(new { error = result.Error }),
         ServiceResultStatus.Unauthorized => Unauthorized(new { error = result.Error }),

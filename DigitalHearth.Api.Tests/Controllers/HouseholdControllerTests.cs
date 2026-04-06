@@ -127,7 +127,7 @@ public class HouseholdControllerTests
 
         var result = await _sut.GetById(UserFixtures.DefaultHouseholdId, default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- GetMembers ---
@@ -190,6 +190,6 @@ public class HouseholdControllerTests
 
         var result = await _sut.Update(UserFixtures.DefaultHouseholdId, new UpdateHouseholdRequest("New Name", null, null, null), default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 }

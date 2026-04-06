@@ -96,7 +96,7 @@ public class MealControllerTests
 
         var result = await _sut.GetWeekly(UserFixtures.DefaultHouseholdId, null, default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- AddWeekly ---
@@ -205,7 +205,7 @@ public class MealControllerTests
 
         var result = await _sut.DeleteWeekly(MealFixtures.DefaultMealId, default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- GetLibrary ---
@@ -266,7 +266,7 @@ public class MealControllerTests
 
         var result = await _sut.AddToLibrary(UserFixtures.DefaultHouseholdId, new AddLibraryMealRequest("Pasta", null), default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- DeleteFromLibrary ---

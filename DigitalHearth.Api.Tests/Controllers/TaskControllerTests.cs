@@ -55,7 +55,7 @@ public class TaskControllerTests
 
         var result = await _sut.List(UserFixtures.DefaultHouseholdId, default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- Create ---
@@ -128,7 +128,7 @@ public class TaskControllerTests
 
         var result = await _sut.Update(TaskFixtures.DefaultId, new UpdateTaskRequest("New Name", null), default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- Delete ---
@@ -200,7 +200,7 @@ public class TaskControllerTests
 
         var result = await _sut.Complete(TaskFixtures.DefaultId, default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- History ---

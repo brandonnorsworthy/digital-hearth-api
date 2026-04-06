@@ -133,7 +133,7 @@ public class NotificationControllerTests
 
         var result = await _sut.GetPreferences(UserFixtures.DefaultHouseholdId, default);
 
-        result.Should().BeOfType<ForbidResult>();
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(403);
     }
 
     // --- OptOut ---

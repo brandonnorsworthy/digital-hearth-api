@@ -5,7 +5,7 @@ using DigitalHearth.Api.Repositories;
 
 namespace DigitalHearth.Api.Services;
 
-public class HouseholdService(IHouseholdRepository households, IUserRepository users, ICurrentUserService currentUser, IJoinCodeService joinCodeService) : IHouseholdService
+public class HouseholdService(IHouseholdRepository households, IUserRepository users, ICurrentUserService currentUser, IJoinCodeService joinCodeService, IMealRepository meals) : IHouseholdService
 {
     private static readonly string[] ValidDays =
         ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -23,6 +23,13 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
             0 => "Sunday", 1 => "Monday", 2 => "Tuesday", 3 => "Wednesday",
             4 => "Thursday", 5 => "Friday", 6 => "Saturday", _ => "Monday"
         };
+
+    private static DateOnly GetCurrentWeekOf(int startDay)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var diff = ((int)today.DayOfWeek - startDay + 7) % 7;
+        return today.AddDays(-diff);
+    }
 
     private static int CurrentYyyyMm() =>
         DateTime.UtcNow.Year * 100 + DateTime.UtcNow.Month;
@@ -173,7 +180,13 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
             var day = DayNameToInt(req.WeekResetDay);
             if (day < 0)
                 return ServiceResult<HouseholdResponse>.BadRequest("WeekResetDay must be a valid day name (e.g. Monday)");
-            household.WeekResetDay = day;
+            if (day != household.WeekResetDay)
+            {
+                var oldCurrentWeekOf = GetCurrentWeekOf(household.WeekResetDay);
+                household.WeekResetDay = day;
+                var newCurrentWeekOf = GetCurrentWeekOf(day);
+                await meals.ReanchorWeeklyMealsAsync(household.Id, oldCurrentWeekOf, newCurrentWeekOf, ct);
+            }
         }
         if (req.GoalMealsPerWeek is not null)
             household.GoalMealsPerWeek = req.GoalMealsPerWeek;
