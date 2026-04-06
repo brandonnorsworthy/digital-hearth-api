@@ -11,6 +11,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
         t.HouseholdId,
         t.Name,
         t.IntervalDays,
+        t.IsOneTime,
         t.LastCompletedAt,
         t.LastCompletedByUser?.Username,
         (t.LastCompletedAt ?? t.CreatedAt).AddDays(t.IntervalDays));
@@ -24,6 +25,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
         var list = await tasks.GetByHouseholdAsync(householdId, ct);
 
         var responses = list
+            .Where(t => !(t.IsOneTime && t.LastCompletedAt.HasValue))
             .Select(ToResponse)
             .OrderBy(t => t.NextDueAt)
             .ToList();
@@ -45,6 +47,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
             HouseholdId = householdId,
             Name = req.Name,
             IntervalDays = req.IntervalDays,
+            IsOneTime = req.IsOneTime,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -70,6 +73,7 @@ public class TaskService(ITaskRepository tasks) : ITaskService
                 return ServiceResult<TaskResponse>.BadRequest("IntervalDays must be greater than 0");
             task.IntervalDays = req.IntervalDays.Value;
         }
+        if (req.IsOneTime is not null) task.IsOneTime = req.IsOneTime.Value;
 
         await tasks.SaveAsync(ct);
         return ServiceResult<TaskResponse>.Ok(ToResponse(task));

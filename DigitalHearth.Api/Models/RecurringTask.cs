@@ -6,6 +6,7 @@ public class RecurringTask
     public Guid HouseholdId { get; set; }
     public string Name { get; set; } = null!;
     public int IntervalDays { get; set; }
+    public bool IsOneTime { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastCompletedAt { get; set; }
     public Guid? LastCompletedByUserId { get; set; }

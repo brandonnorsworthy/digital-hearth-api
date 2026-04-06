@@ -5,6 +5,7 @@ public record TaskResponse(
     Guid HouseholdId,
     string Name,
     int IntervalDays,
+    bool IsOneTime,
     DateTime? LastCompletedAt,
     string? LastCompletedBy,
     DateTime NextDueAt);

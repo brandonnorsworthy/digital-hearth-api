@@ -14,7 +14,7 @@ public class TaskControllerTests
     private readonly Mock<ITaskService> _taskService = new();
     private readonly TaskController _sut;
 
-    private static readonly TaskResponse FakeTask = new(TaskFixtures.DefaultId, UserFixtures.DefaultHouseholdId, "Vacuum", 7, null, null, DateTime.UtcNow.AddDays(7));
+    private static readonly TaskResponse FakeTask = new(TaskFixtures.DefaultId, UserFixtures.DefaultHouseholdId, "Vacuum", 7, false, null, null, DateTime.UtcNow.AddDays(7));
 
     public TaskControllerTests()
     {
