@@ -97,7 +97,7 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
             return ServiceResult<HouseholdWithUserResponse>.NotFound("Join code not found");
 
         if (DateTime.UtcNow - household.JoinCodeCreatedAt > JoinCodeTtl)
-            return ServiceResult<HouseholdWithUserResponse>.BadRequest("Join code has expired. Ask a household admin to regenerate it.");
+            return ServiceResult<HouseholdWithUserResponse>.BadRequest("Join code has expired. Ask a Household Admin to regenerate it.");
 
         if (!IsValidPassword(req.Password))
             return ServiceResult<HouseholdWithUserResponse>.BadRequest("Password must be at least 10 characters and include uppercase, lowercase, a number, and a special character");
