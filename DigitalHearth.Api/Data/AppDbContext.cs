@@ -24,9 +24,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Household>()
             .HasIndex(h => h.JoinCode).IsUnique();
 
-        // User: globally unique username
+        // User: globally unique username, IsActive defaults to true
         b.Entity<User>()
             .HasIndex(u => u.Username).IsUnique();
+        b.Entity<User>()
+            .Property(u => u.IsActive)
+            .HasDefaultValue(true);
 
         // RecurringTask: nullable FK to last completer
         b.Entity<RecurringTask>()

@@ -50,4 +50,12 @@ public class HouseholdController(ICurrentUserService currentUser, IHouseholdServ
         if (error is not null) return error;
         return ToActionResult(await householdService.UpdateAsync(id, req, user!, ct));
     }
+
+    [HttpDelete("{id:guid}/members/{memberId:guid}")]
+    public async Task<IActionResult> KickMember(Guid id, Guid memberId, CancellationToken ct)
+    {
+        var (user, error) = await RequireUserAsync(currentUser, ct);
+        if (error is not null) return error;
+        return ToActionResult(await householdService.KickMemberAsync(id, memberId, user!, ct));
+    }
 }

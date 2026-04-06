@@ -11,4 +11,5 @@ public interface IHouseholdService
     Task<ServiceResult<IReadOnlyList<MemberResponse>>> GetMembersAsync(Guid id, User user, CancellationToken ct = default);
     Task<ServiceResult<HouseholdResponse>> RegenerateJoinCodeAsync(Guid id, User user, CancellationToken ct = default);
     Task<ServiceResult<HouseholdResponse>> UpdateAsync(Guid id, UpdateHouseholdRequest req, User user, CancellationToken ct = default);
+    Task<ServiceResult<bool>> KickMemberAsync(Guid householdId, Guid memberId, User requester, CancellationToken ct = default);
 }

@@ -196,4 +196,27 @@ public class HouseholdService(IHouseholdRepository households, IUserRepository u
         await households.SaveAsync(ct);
         return ServiceResult<HouseholdResponse>.Ok(ToResponse(household));
     }
+
+    public async Task<ServiceResult<bool>> KickMemberAsync(Guid householdId, Guid memberId, User requester, CancellationToken ct = default)
+    {
+        if (requester.HouseholdId != householdId)
+            return ServiceResult<bool>.Forbidden();
+
+        if (requester.Role != "admin")
+            return ServiceResult<bool>.Forbidden();
+
+        if (requester.Id == memberId)
+            return ServiceResult<bool>.BadRequest("You cannot kick yourself");
+
+        var target = await users.GetByIdAsync(memberId, ct);
+        if (target is null || target.HouseholdId != householdId)
+            return ServiceResult<bool>.NotFound("Member not found");
+
+        if (target.Role == "admin")
+            return ServiceResult<bool>.BadRequest("Cannot remove another admin");
+
+        target.IsActive = false;
+        await households.SaveAsync(ct);
+        return ServiceResult<bool>.Ok(true);
+    }
 }

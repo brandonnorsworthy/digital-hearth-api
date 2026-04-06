@@ -12,6 +12,9 @@ public class AuthService(IUserRepository users, ICurrentUserService currentUser)
         if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
             return ServiceResult<MeResponse>.Unauthorized("Invalid credentials");
 
+        if (!user.IsActive)
+            return ServiceResult<MeResponse>.Unauthorized("Invalid credentials");
+
         currentUser.SetUserId(user.Id);
 
         return ServiceResult<MeResponse>.Ok(new MeResponse(user.Id, user.Username, user.HouseholdId));

@@ -39,7 +39,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public async Task<List<MemberResponse>> GetMembersByHouseholdAsync(Guid householdId, CancellationToken ct)
     {
         return await db.Users
-            .Where(u => u.HouseholdId == householdId)
+            .Where(u => u.HouseholdId == householdId && u.IsActive)
             .Select(u => new MemberResponse(u.Id, u.Username, u.Role))
             .ToListAsync(ct);
     }

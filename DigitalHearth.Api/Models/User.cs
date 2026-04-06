@@ -7,6 +7,7 @@ public class User
     public string PasswordHash { get; set; } = null!;
     public string Role { get; set; } = "member";
     public Guid HouseholdId { get; set; }
+    public bool IsActive { get; set; } = true;
 
     public Household Household { get; set; } = null!;
     public ICollection<TaskCompletion> Completions { get; set; } = [];
